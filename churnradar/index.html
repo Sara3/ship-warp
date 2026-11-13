@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ChurnRadar by Ship Warp Sorcery</title>
+<style>
+  :root{--bg:#f6f5f1;--card:#fff;--ink:#1d1d1b;--mute:#6b6a64;--line:#e3e1da;--acc:#1f6f50;--red:#b42318;--redbg:#fdecea;--amb:#a15c07;--ambbg:#fef4e2;--grn:#1f6f50;--grnbg:#e9f5ef}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--ink)}
+  header{background:var(--ink);color:#fff;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  header h1{font-size:20px;margin:0}
+  header span{color:#bdbcb5;font-size:13px}
+  header a{color:#bdbcb5;font-size:13px}
+  main{max-width:1200px;margin:0 auto;padding:18px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:900px){.grid{grid-template-columns:1fr}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:16px;overflow-x:auto}
+  h2{font-size:15px;margin:0 0 10px;text-transform:uppercase;letter-spacing:.04em;color:var(--mute)}
+  label{font-size:12px;color:var(--mute);display:block;margin-bottom:3px}
+  input,textarea{font:inherit;padding:7px 8px;border:1px solid var(--line);border-radius:6px;width:100%;background:#fff}
+  input:invalid{border-color:var(--red);background:var(--redbg)}
+  textarea{min-height:90px;resize:vertical;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px}
+  button{font:inherit;cursor:pointer;border-radius:6px;border:1px solid var(--line);background:#fff;padding:7px 12px}
+  button.primary{background:var(--acc);color:#fff;border-color:var(--acc)}
+  button.x{border:none;background:none;color:var(--mute);font-size:18px;padding:0 6px}
+  button.sm{padding:3px 8px;font-size:12px}
+  .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center}
+  .mute{color:var(--mute);font-size:13px}
+  table{width:100%;border-collapse:collapse;min-width:900px}
+  th{font-size:12px;color:var(--mute);text-align:left;font-weight:600;padding:6px 4px;border-bottom:1px solid var(--line)}
+  td{padding:4px;vertical-align:middle;border-bottom:1px dashed var(--line)}
+  td.num input{width:80px;text-align:right}
+  .pill{display:inline-block;padding:2px 10px;border-radius:12px;font-weight:700;font-size:13px}
+  .Red{background:var(--redbg);color:var(--red)} .Amber{background:var(--ambbg);color:var(--amb)} .Green{background:var(--grnbg);color:var(--grn)}
+  .money{background:var(--card);border:1px solid var(--line);border-left:8px solid var(--red);border-radius:10px;padding:14px 18px;margin-bottom:16px;display:flex;gap:24px;align-items:center;flex-wrap:wrap}
+  .money .big{font-size:44px;font-weight:800;color:var(--red);line-height:1.05}
+  .money .lbl{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--red)}
+  .money .sub{font-size:15px;color:var(--ink)}
+  .tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+  @media(max-width:600px){.tiles{grid-template-columns:repeat(2,1fr)}}
+  .tile{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+  .tile b{display:block;font-size:30px}
+  .tile.Red{border-left:6px solid var(--red)} .tile.Amber{border-left:6px solid var(--amb)} .tile.Green{border-left:6px solid var(--grn)}
+  .tile span{font-size:13px;font-weight:600}
+  .rule td,.rule th{border:none;padding:3px 6px;font-size:14px}
+  .rule table{min-width:0;width:auto}
+  .risk{padding:8px 10px;border-radius:6px;margin:6px 0;font-size:14px;border-left:4px solid var(--amb);background:var(--ambbg)}
+  .risk.Red{border-color:var(--red);background:var(--redbg);color:var(--ink)}
+  .risk.Amber{color:var(--ink)}
+  .bd{font-size:12px;color:var(--mute);white-space:nowrap}
+  .ai{font-size:12px;max-width:260px}
+  .ai .sig{font-weight:700}
+  .row4{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:10px}
+  @media(max-width:600px){.row4{grid-template-columns:1fr 1fr}}
+  footer{text-align:center;padding:20px;color:var(--mute);font-size:13px}
+</style>
+</head>
+<body>
+<header>
+  <div><h1>ChurnRadar</h1><span>Every subscription account scored Red / Amber / Green from usage, tickets and renewal date.</span></div>
+  <span>Team: <strong style="color:#fff">Ship Warp Sorcery</strong> &middot; <a href="../">BidBench</a></span>
+</header>
+
+<main>
+  <div class="money" id="revCard" aria-live="polite">
+    <div><div class="lbl">Monthly revenue at risk</div><div class="big" id="rRisk">$0</div><div class="mute">Sum of the monthly bill across Red accounts</div></div>
+    <div class="sub"><div>Amber: <strong id="rAmber">$0</strong> / month</div><div>Total monthly revenue: <strong id="rTotal">$0</strong></div></div>
+  </div>
+  <div class="tiles" id="summary" aria-live="polite">
+    <div class="tile Red"><span>Red</span><b id="cRed">0</b></div>
+    <div class="tile Amber"><span>Amber</span><b id="cAmber">0</b></div>
+    <div class="tile Green"><span>Green</span><b id="cGreen">0</b></div>
+    <div class="tile"><span>Total accounts</span><b id="cTotal">0</b></div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>At-risk accounts (Red and Amber, worst first)</h2>
+      <div id="atRisk"></div>
+    </div>
+    <div class="card rule" id="ruleCard">
+      <h2>How the score works</h2>
+      <p style="margin-top:0">Each account gets risk points from three facts. Add them up. <strong>0-1 points = Green, 2-3 = Amber, 4-6 = Red.</strong> Plain rule, no AI in the score.</p>
+      <table>
+        <tr><th>Fact</th><th>2 points</th><th>1 point</th><th>0 points</th></tr>
+        <tr><td>Logins in the last 30 days</td><td>0-4</td><td>5-14</td><td>15 or more</td></tr>
+        <tr><td>Open support tickets</td><td>5 or more</td><td>2-4</td><td>0-1</td></tr>
+        <tr><td>Days to renewal</td><td>0-30 (or overdue)</td><td>31-90</td><td>91 or more</td></tr>
+      </table>
+      <p class="mute" style="margin-bottom:0">The "AI read" column is advice from the account notes only. It never changes the Red / Amber / Green score.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Accounts</h2>
+    <div class="actions" style="margin-top:0">
+      <button class="primary" id="sampleBtn">Load sample accounts</button>
+      <button id="clearBtn">Clear all</button>
+      <span class="mute" id="listMsg" role="status"></span>
+    </div>
+    <div style="margin-top:12px">
+      <table id="accTable">
+        <thead><tr><th>Account</th><th class="num">Logins (30 days)</th><th class="num">Open tickets</th><th class="num">Days to renewal</th><th class="num">Monthly bill ($)</th><th>Health</th><th>Points</th><th>Notes / latest ticket</th><th>AI signal</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <p class="mute" id="emptyMsg">No accounts yet. Add one below, paste a CSV, or load the sample accounts.</p>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>Add an account</h2>
+      <div class="row4">
+        <div><label for="aName">Account name</label><input id="aName" placeholder="e.g. Acme Corp"></div>
+        <div><label for="aLogins">Logins (30 days)</label><input id="aLogins" type="number" min="0" step="1" placeholder="0"></div>
+        <div><label for="aTickets">Open tickets</label><input id="aTickets" type="number" min="0" step="1" placeholder="0"></div>
+        <div><label for="aDays">Days to renewal</label><input id="aDays" type="number" step="1" placeholder="90"></div>
+      </div>
+      <div style="margin-top:10px;max-width:200px"><label for="aBill">Monthly bill ($)</label><input id="aBill" type="number" min="0" step="any" placeholder="0"></div>
+      <div style="margin-top:10px"><label for="aNotes">Notes / latest ticket (optional)</label><input id="aNotes" placeholder="e.g. Asked how to export their data"></div>
+      <div class="actions"><button class="primary" id="addBtn">Add account</button><span class="mute" id="addMsg" role="status"></span></div>
+    </div>
+    <div class="card">
+      <h2>Paste CSV</h2>
+      <label for="csvIn">One account per line: name, logins, tickets, days, monthly bill (bill optional; header row optional; notes as an optional 6th column)</label>
+      <textarea id="csvIn" placeholder="name,logins,tickets,days,bill&#10;Acme Corp,3,6,21,4500&#10;Globex,20,0,180,1200"></textarea>
+      <div class="actions"><button class="primary" id="importBtn">Import CSV</button><span class="mute" id="csvMsg" role="status"></span></div>
+    </div>
+  </div>
+</main>
+
+<footer>ChurnRadar &middot; built by team <strong>Ship Warp Sorcery</strong> &middot; <a href="../">BidBench</a></footer>
+
+<script>
+const AI_URL="https://bidbench.pubandsubs.workers.dev/api/churn";
+const AI_TIMEOUT_MS=5000;
+const SKEY="churnradar.accounts.v1";
+const $=id=>document.getElementById(id);
+function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function num(v){const n=parseFloat(v);return isFinite(n)?n:0}
+function cnt(v){return Math.max(0,Math.floor(num(v)))}
+function bill(v){return Math.max(0,num(v))}
+function usd(n){return "$"+n.toLocaleString("en-US",{minimumFractionDigits:0,maximumFractionDigits:2})}
+let accounts=[],undoList=null,seq=0;
+function newId(){return "a"+Date.now().toString(36)+(seq++).toString(36)}
+
+// ---- The score: plain rule, exactly as written on the page ----
+function loginPts(n){return n<=4?2:n<=14?1:0}
+function ticketPts(n){return n>=5?2:n>=2?1:0}
+function renewalPts(d){return d<=30?2:d<=90?1:0}
+function health(p){return p>=4?"Red":p>=2?"Amber":"Green"}
+function score(a){const L=cnt(a.logins),T=cnt(a.tickets),D=Math.floor(num(a.days));
+  const l=loginPts(L),t=ticketPts(T),r=renewalPts(D),total=l+t+r,h=health(total);
+  return {l,t,r,total,health:h,L,T,D,breakdown:`logins ${l} + tickets ${t} + renewal ${r} = ${total} → ${h}`};}
+function reason(s){const out=[];
+  if(s.l)out.push(`only ${s.L} login${s.L===1?"":"s"} in 30 days`);
+  if(s.t)out.push(`${s.T} open ticket${s.T===1?"":"s"}`);
+  if(s.r)out.push(s.D<0?`renewal ${-s.D} day${s.D===-1?"":"s"} overdue`:s.D===0?"renews today":`renews in ${s.D} day${s.D===1?"":"s"}`);
+  return out.join(", ");}
+function atRiskList(){return accounts.map(a=>({a,s:score(a)})).filter(x=>x.s.health!=="Green")
+  .sort((x,y)=>y.s.total-x.s.total||x.s.D-y.s.D||String(x.a.name).localeCompare(String(y.a.name)));}
+
+// ---- Storage (this browser only) ----
+function save(){try{window.localStorage.setItem(SKEY,JSON.stringify(accounts))}catch(e){}}
+function loadStored(){try{const v=JSON.parse(window.localStorage.getItem(SKEY));return Array.isArray(v)?v.filter(a=>a&&typeof a==="object").map(clean):null}catch(e){return null}}
+function clean(a){return {id:a.id||newId(),name:String(a.name??""),logins:cnt(a.logins),tickets:cnt(a.tickets),days:Math.floor(num(a.days)),bill:bill(a.bill),notes:String(a.notes??""),ai:a.ai&&typeof a.ai==="object"?{text:String(a.ai.text??""),sig:String(a.ai.sig??""),html:""}:null}}
+
+const SAMPLE=[
+  ["Northwind Dental Group",3,6,21,4800,"Asked how to cancel; says they are switching to a competitor next quarter."],
+  ["Bluegate Logistics",8,3,45,2150,"Two billing questions this month."],
+  ["Harbor & Pine Realty",22,0,200,1200,"Loves the new dashboard, asking about adding 5 more seats."],
+  ["Copperleaf Clinics",2,1,60,3400,"Admin went on leave, nobody else trained."],
+  ["Meridian Freight",12,5,14,6900,"Outage complaints, wants a refund for last week."],
+  ["Tallow Street Bakery",40,1,120,180,""],
+  ["Kestrel Analytics",18,2,25,2750,"Our champion left the company."],
+  ["Orchard Lane Schools",4,3,75,5200,"Budget review in progress, price increase concerns."],
+  ["Sable Peak Outfitters",31,0,30,950,"Happy with support, renewal paperwork sent."],
+  ["Fjordline Media",16,1,95,1600,""]
+];
+function sampleAccounts(){return SAMPLE.map(([name,logins,tickets,days,bill,notes])=>({id:newId(),name,logins,tickets,days,bill,notes,ai:null}))}
+
+// ---- Rendering ----
+function aiCell(a){const busy=a.busy?`<span class="mute">Reading...</span>`:"";
+  const res=a.ai?`<div class="ai">${a.ai.html||esc(a.ai.text)}</div>`:"";
+  return `${res}${busy}<button class="sm" data-ai="${esc(a.id)}" ${a.busy?"disabled":""}>AI read</button>`;}
+function rowScore(a){const s=score(a);return {pill:`<span class="pill ${s.health}">${s.health}</span>`,bd:esc(s.breakdown)}}
+function render(){
+  const tb=$("accTable").querySelector("tbody");
+  tb.innerHTML=accounts.map(a=>{const r=rowScore(a);return `<tr data-row="${esc(a.id)}">
+    <td><input aria-label="Account name" value="${esc(a.name)}" data-id="${esc(a.id)}" data-k="name"></td>
+    <td class="num"><input aria-label="Logins in the last 30 days" type="number" min="0" step="1" value="${esc(a.logins)}" data-id="${esc(a.id)}" data-k="logins"></td>
+    <td class="num"><input aria-label="Open tickets" type="number" min="0" step="1" value="${esc(a.tickets)}" data-id="${esc(a.id)}" data-k="tickets"></td>
+    <td class="num"><input aria-label="Days to renewal" type="number" step="1" value="${esc(a.days)}" data-id="${esc(a.id)}" data-k="days"></td>
+    <td class="num"><input aria-label="Monthly bill" type="number" min="0" step="any" value="${esc(a.bill)}" data-id="${esc(a.id)}" data-k="bill" style="width:100px"></td>
+    <td data-cell="health">${r.pill}</td>
+    <td class="bd" data-cell="bd">${r.bd}</td>
+    <td><input aria-label="Notes or latest ticket" value="${esc(a.notes)}" placeholder="optional" data-id="${esc(a.id)}" data-k="notes" style="min-width:180px"></td>
+    <td data-cell="ai">${aiCell(a)}</td>
+    <td><button class="x" title="Delete account" data-del="${esc(a.id)}">&times;</button></td></tr>`}).join("");
+  $("emptyMsg").style.display=accounts.length?"none":"block";
+  refresh();
+}
+function refresh(){
+  const c={Red:0,Amber:0,Green:0},rev={Red:0,Amber:0,Green:0};accounts.forEach(a=>{const h=score(a).health;c[h]++;rev[h]+=bill(a.bill)});
+  const totalRev=rev.Red+rev.Amber+rev.Green;
+  $("rRisk").textContent=usd(rev.Red);$("rAmber").textContent=usd(rev.Amber);$("rTotal").textContent=usd(totalRev);
+  $("cRed").textContent=c.Red;$("cAmber").textContent=c.Amber;$("cGreen").textContent=c.Green;$("cTotal").textContent=accounts.length;
+  const list=atRiskList();
+  $("atRisk").innerHTML=list.length?list.map(({a,s},i)=>`<div class="risk ${s.health}" data-risk="${esc(a.id)}"><strong>${i+1}. ${esc(a.name||"(no name)")}</strong> <span class="pill ${s.health}">${s.health} &middot; ${s.total} pts</span> <strong style="float:right">${esc(usd(bill(a.bill)))} / month</strong><br>${esc(reason(s))}</div>`).join("")
+    :`<p class="mute">${accounts.length?"No Red or Amber accounts. Everyone looks healthy.":"No accounts yet."}</p>`;
+  window.__churn={counts:c,revenue:{red:rev.Red,amber:rev.Amber,total:totalRev},total:accounts.length,atRisk:list.map(x=>x.a.name)};
+  save();
+}
+function updateRow(a){const tr=[...document.querySelectorAll("tr[data-row]")].find(r=>r.dataset.row===a.id);if(!tr)return;const r=rowScore(a);
+  tr.querySelector('[data-cell="health"]').innerHTML=r.pill;tr.querySelector('[data-cell="bd"]').innerHTML=r.bd;tr.querySelector('[data-cell="ai"]').innerHTML=aiCell(a);}
+function find(id){return accounts.find(a=>a.id===id)}
+
+// ---- Edit / delete ----
+document.addEventListener("input",e=>{const t=e.target,a=t.dataset.id&&find(t.dataset.id);if(!a)return;const k=t.dataset.k;
+  if(k==="name"||k==="notes"){a[k]=t.value;if(k==="notes")a.ai=null}else a[k]=k==="days"?Math.floor(num(t.value)):k==="bill"?bill(t.value):cnt(t.value);
+  updateRow(a);refresh();});
+function msg(id,h){$(id).innerHTML=h}
+document.addEventListener("click",e=>{const t=e.target;
+  if(t.dataset.del){const i=accounts.findIndex(a=>a.id===t.dataset.del);if(i<0)return;undoList=accounts.slice();const gone=accounts.splice(i,1)[0];render();
+    msg("listMsg",`Deleted "${esc(gone.name)}". <button class="sm" id="undoBtn">Undo</button>`);}
+  if(t.id==="undoBtn"&&undoList){accounts=undoList;undoList=null;render();msg("listMsg","Restored.");}
+  if(t.dataset.ai){const a=find(t.dataset.ai);if(a)aiRead(a);}
+});
+$("sampleBtn").onclick=()=>{undoList=accounts.length?accounts.slice():null;accounts=sampleAccounts();render();
+  msg("listMsg",`Loaded ${accounts.length} sample accounts.`+(undoList?` <button class="sm" id="undoBtn">Undo</button>`:""));};
+$("clearBtn").onclick=()=>{if(!accounts.length){msg("listMsg","Nothing to clear.");return}undoList=accounts.slice();accounts=[];render();
+  msg("listMsg",`Cleared all accounts. <button class="sm" id="undoBtn">Undo</button>`);};
+$("addBtn").onclick=()=>{const name=$("aName").value.trim();if(!name){msg("addMsg","Give the account a name first.");$("aName").focus();return}
+  const a={id:newId(),name,logins:cnt($("aLogins").value),tickets:cnt($("aTickets").value),days:Math.floor(num($("aDays").value===""?90:$("aDays").value)),bill:bill($("aBill").value),notes:$("aNotes").value.trim(),ai:null};
+  accounts.push(a);render();const s=score(a);msg("addMsg",`Added "${esc(name)}": ${esc(s.breakdown)}`);
+  ["aName","aLogins","aTickets","aDays","aBill","aNotes"].forEach(id=>$(id).value="");};
+
+// ---- CSV import: name,logins,tickets,days[,notes] ----
+function parseLine(line){const out=[];let cur="",q=false;
+  for(let i=0;i<line.length;i++){const ch=line[i];
+    if(q){if(ch==='"'){if(line[i+1]==='"'){cur+='"';i++}else q=false}else cur+=ch}
+    else if(ch==='"')q=true;else if(ch===","||ch===";"||ch==="\t"){out.push(cur);cur=""}else cur+=ch;}
+  out.push(cur);return out.map(s=>s.trim());}
+function isNum(s){return s!==""&&isFinite(Number(s))}
+function importCSV(text){const lines=String(text).split(/\r?\n/).map(l=>l.trim()).filter(Boolean);const added=[],skipped=[];
+  lines.forEach((line,i)=>{const f=parseLine(line);
+    if(i===0&&f.length>=2&&!isNum(f[1])&&/name|account|logins?/i.test(line))return; // header row
+    if(f.length<4||!f[0]){skipped.push(`line ${i+1} (needs name, logins, tickets, days)`);return}
+    const bad=[["logins",f[1]],["tickets",f[2]],["days",f[3]]].filter(([,v])=>!isNum(v)).map(([k])=>k);
+    if(bad.length){skipped.push(`line ${i+1} (${bad.join(", ")} not a number)`);return}
+    const hasBill=f.length>4&&isNum(f[4].replace(/[$,]/g,""));
+    if(f.length>4&&f[4]!==""&&!hasBill&&/^[-$\d.,\s]+$/.test(f[4])){skipped.push(`line ${i+1} (bill not a number)`);return}
+    added.push({id:newId(),name:f[0],logins:cnt(f[1]),tickets:cnt(f[2]),days:Math.floor(Number(f[3])),bill:hasBill?bill(f[4].replace(/[$,]/g,"")):0,notes:f.slice(hasBill||f[4]===""?5:4).join(", "),ai:null});});
+  return {added,skipped};}
+$("importBtn").onclick=()=>{const {added,skipped}=importCSV($("csvIn").value);
+  if(added.length){accounts=accounts.concat(added);render();$("csvIn").value=""}
+  msg("csvMsg",(added.length?`Imported ${added.length} account${added.length===1?"":"s"}.`:"Nothing imported.")+(skipped.length?` Skipped ${esc(skipped.join("; "))}.`:""));};
+
+// ---- AI read (advice only; never changes the score) ----
+const KW_RISK=/cancel|switch(ing)? to|competitor|leav(e|ing)|left the company|refund|too expensive|price increase|downgrad|frustrat|angry|unhappy|disappoint|not using|churn|terminat|outage|broken|budget (cut|review)/i;
+const KW_POS=/love|great|happy|expand|upgrade|more seats|adding|thank|renew(al|ing)? (signed|paperwork|confirmed)|recommend/i;
+function keywordRead(text){const r=text.match(KW_RISK),p=text.match(KW_POS);
+  if(r)return {sig:"churn risk",why:`mentions "${r[0]}"`};if(p)return {sig:"positive",why:`mentions "${p[0]}"`};return {sig:"neutral",why:"no risk or positive words found"};}
+async function callAI(text){
+  if(typeof fetch!=="function")throw new Error("offline");
+  const ctl=typeof AbortController==="function"?new AbortController():null;let timer;
+  const timeout=new Promise((_,rej)=>{timer=setTimeout(()=>{if(ctl)ctl.abort();rej(new Error("timed out"))},AI_TIMEOUT_MS)});
+  try{const res=await Promise.race([fetch(AI_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text}),signal:ctl?ctl.signal:undefined}),timeout]);
+    if(!res||!res.ok)throw new Error("HTTP "+(res&&res.status));
+    const j=await Promise.race([res.json(),timeout]);
+    const d=j&&j.ok&&j.data;if(!d||!["churn risk","neutral","positive"].includes(d.signal))throw new Error("bad reply");
+    return {sig:d.signal,why:String(d.reason||"").slice(0,300)};}
+  finally{clearTimeout(timer)}}
+async function aiRead(a){const text=String(a.notes||"").trim();
+  if(!text){a.ai={sig:"",text:"Add notes or the latest ticket text first.",html:""};updateRow(a);return}
+  a.busy=true;updateRow(a);
+  try{const r=await callAI(text);a.ai={sig:r.sig,text:`AI: ${r.sig}${r.why?" - "+r.why:""}`,html:`<span class="sig">AI: ${esc(r.sig)}</span>${r.why?" - "+esc(r.why):""}`};}
+  catch(e){const k=keywordRead(text);a.ai={sig:k.sig,text:`AI unavailable. keyword read: ${k.sig} (${k.why})`,html:`<span class="mute">AI unavailable.</span> <span class="sig">keyword read: ${esc(k.sig)}</span> (${esc(k.why)})`};}
+  finally{a.busy=false;if(find(a.id))updateRow(a);refresh();}}
+
+// ---- Start: remembered accounts, or the samples on a first visit ----
+const stored=loadStored();
+accounts=stored===null?sampleAccounts():stored;
+render();
+</script>
+</body>
+</html>
