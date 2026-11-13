@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SpendWise by Ship Warp Sorcery</title>
+<style>
+  :root{--bg:#f6f5f1;--card:#fff;--ink:#1d1d1b;--mute:#6b6a64;--line:#e3e1da;--acc:#1f6f50;--red:#b42318;--redbg:#fdecea;--amb:#a15c07;--ambbg:#fef4e2;--grn:#1f6f50;--grnbg:#e9f5ef}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--ink)}
+  header{background:var(--ink);color:#fff;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  header h1{font-size:20px;margin:0} header span{color:#bdbcb5;font-size:13px}
+  main{max-width:1100px;margin:0 auto;padding:18px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px} @media(max-width:900px){.grid{grid-template-columns:1fr}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:16px;overflow-x:auto}
+  h2{font-size:15px;margin:0 0 10px;text-transform:uppercase;letter-spacing:.04em;color:var(--mute)}
+  label{font-size:12px;color:var(--mute);display:block;margin-bottom:3px}
+  input{font:inherit;padding:7px 8px;border:1px solid var(--line);border-radius:6px;width:100%;background:#fff}
+  input.bad{border-color:var(--red);background:var(--redbg)}
+  button{font:inherit;cursor:pointer;border-radius:6px;border:1px solid var(--line);background:#fff;padding:7px 12px}
+  button.primary{background:var(--acc);color:#fff;border-color:var(--acc)}
+  button.x{border:none;background:none;color:var(--mute);font-size:18px;padding:0 6px}
+  button.sm{padding:3px 8px;font-size:12px}
+  .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center}
+  .mute{color:var(--mute);font-size:13px}
+  .err{color:var(--red);font-size:13px;font-weight:600}
+  table{width:100%;border-collapse:collapse}
+  th{font-size:12px;color:var(--mute);text-align:left;font-weight:600;padding:6px 4px;border-bottom:1px solid var(--line)}
+  td{padding:6px 4px;border-bottom:1px dashed var(--line);vertical-align:middle;font-size:14px}
+  .num{text-align:right;white-space:nowrap}
+  tfoot td{font-weight:700;border-bottom:none;border-top:2px solid var(--line)}
+  .bar{height:10px;background:var(--line);border-radius:5px;overflow:hidden;min-width:90px}
+  .bar i{display:block;height:100%;background:var(--grn)}
+  .bar.near i{background:var(--amb)} .bar.over i{background:var(--red)}
+  .st{font-size:12px;font-weight:700;border-radius:10px;padding:2px 8px;white-space:nowrap}
+  .st.over{background:var(--red);color:#fff} .st.near{background:var(--ambbg);color:var(--amb)} .st.ok{background:var(--grnbg);color:var(--grn)} .st.none{background:#ecebe7;color:var(--mute)}
+  .banner{background:var(--redbg);border:1px solid var(--red);border-left:8px solid var(--red);color:var(--red);border-radius:10px;padding:12px 16px;margin-bottom:16px;font-weight:700}
+  .tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
+  .tile{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px} .tile b{display:block;font-size:26px} .tile span{font-size:13px;color:var(--mute);font-weight:600}
+  .row4{display:grid;grid-template-columns:2fr 1.4fr 1fr 1fr;gap:10px} @media(max-width:600px){.row4{grid-template-columns:1fr 1fr}}
+  .sug{font-size:12px;margin-top:4px}
+  footer{text-align:center;padding:20px;color:var(--mute);font-size:13px}
+</style>
+</head>
+<body>
+<header>
+  <div><h1>SpendWise</h1><span>Log spend by category, compare to budget, catch overruns before month-end close.</span></div>
+  <span>Team: <strong style="color:#fff">Ship Warp Sorcery</strong></span>
+</header>
+<main>
+  <div class="banner" id="overBanner" role="alert" style="display:none"></div>
+  <div class="tiles">
+    <div class="tile"><span>Total spent</span><b id="gTotal">$0.00</b></div>
+    <div class="tile"><span>Total budget</span><b id="gBudget">$0.00</b></div>
+    <div class="tile"><span>Remaining</span><b id="gLeft">$0.00</b></div>
+  </div>
+
+  <div class="card">
+    <h2>Add an expense</h2>
+    <div class="row4">
+      <div><label for="eDesc">Description</label><input id="eDesc" placeholder="e.g. Figma subscription"></div>
+      <div><label for="eCat">Category (type any, new ones are created)</label><input id="eCat" list="catList" placeholder="e.g. Software" autocomplete="off"><datalist id="catList"></datalist>
+        <div class="sug" id="eSuggest"></div></div>
+      <div><label for="eAmt">Amount ($)</label><input id="eAmt" type="number" min="0.01" step="0.01" placeholder="0.00"></div>
+      <div><label for="eDate">Date (optional)</label><input id="eDate" type="date"></div>
+    </div>
+    <div class="actions"><button class="primary" id="addBtn">Add expense</button><span class="err" id="eErr" role="alert"></span><span class="mute" id="addMsg" role="status"></span></div>
+  </div>
+
+  <div class="card">
+    <h2>Budget by category</h2>
+    <table id="budTable">
+      <thead><tr><th>Category</th><th class="num">Spent</th><th class="num">Budget ($)</th><th class="num">Remaining</th><th>Progress</th><th>Status</th></tr></thead>
+      <tbody></tbody>
+      <tfoot><tr><td>Grand total</td><td class="num" id="ftSpent">$0.00</td><td class="num" id="ftBudget">$0.00</td><td class="num" id="ftLeft"></td><td></td><td></td></tr></tfoot>
+    </table>
+    <p class="mute" id="budEmpty">No categories yet. Add an expense or set a budget below.</p>
+    <div class="actions">
+      <input id="bCat" list="catList" placeholder="Category" style="max-width:200px" aria-label="Category for new budget">
+      <input id="bAmt" type="number" min="0" step="0.01" placeholder="Budget $" style="max-width:140px" aria-label="Budget amount">
+      <button id="bAdd">Set budget</button><span class="err" id="bErr" role="alert"></span>
+    </div>
+    <p class="mute">Near limit = 90% or more of the budget spent. Over budget = spent more than the budget.</p>
+  </div>
+
+  <div class="card">
+    <h2>Expenses</h2>
+    <div class="actions" style="margin-top:0">
+      <button class="primary" id="sampleBtn">Load sample data</button>
+      <button id="clearBtn">Clear all</button>
+      <span class="mute" id="listMsg" role="status"></span>
+    </div>
+    <table id="expTable" style="margin-top:10px">
+      <thead><tr><th>Date</th><th>Description</th><th>Category</th><th class="num">Amount</th><th></th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <p class="mute" id="expEmpty">No expenses yet.</p>
+  </div>
+</main>
+<footer>SpendWise &middot; built by team <strong>Ship Warp Sorcery</strong></footer>
+
+<script>
+const KEY="spendwise.v1";
+const $=id=>document.getElementById(id);
+function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function num(v){const n=parseFloat(v);return isFinite(n)?n:0}
+function money(n){return (n<0?"-$":"$")+Math.abs(n).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2})}
+function r2(n){return Math.round(n*100)/100}
+function now(){return typeof window.__now==="function"?window.__now():Date.now()}
+function today(){const d=new Date(now());return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
+let expenses=[],budgets={},undo=null,seq=0;
+const newId=()=>"x"+now().toString(36)+(seq++).toString(36);
+
+// ---- Storage ----
+function save(){try{window.localStorage.setItem(KEY,JSON.stringify({expenses,budgets}))}catch(e){}}
+function load(){try{const v=JSON.parse(window.localStorage.getItem(KEY));if(!v||!Array.isArray(v.expenses))return null;
+  return {expenses:v.expenses.filter(x=>x&&num(x.amount)>0).map(x=>({id:String(x.id||newId()),desc:String(x.desc||""),cat:String(x.cat||"Uncategorized"),amount:r2(num(x.amount)),date:String(x.date||"")})),
+    budgets:v.budgets&&typeof v.budgets==="object"?Object.fromEntries(Object.entries(v.budgets).map(([k,b])=>[k,b===null||b===""?null:Math.max(0,num(b))])):{}};}catch(e){return null}}
+
+// ---- Categories: one bucket per name, case-insensitive ----
+function catName(raw){const t=String(raw||"").trim().replace(/\s+/g," ");if(!t)return "";
+  const all=categories();return all.find(c=>c.toLowerCase()===t.toLowerCase())||t;}
+function categories(){const s=[];const add=c=>{if(c&&!s.some(x=>x.toLowerCase()===c.toLowerCase()))s.push(c)};
+  Object.keys(budgets).forEach(add);expenses.forEach(e=>add(e.cat));return s;}
+
+// ---- Suggested category from a local keyword map (no AI, no network) ----
+const SUGGEST=[[/figma|slack|github|notion|saas|subscription|license|software|aws|google workspace|zoom|adobe/i,"Software"],
+  [/flight|hotel|uber|lyft|taxi|airbnb|train|travel|mileage|parking/i,"Travel"],
+  [/lunch|dinner|coffee|meal|restaurant|catering|breakfast/i,"Meals"],
+  [/ads?\b|campaign|marketing|conference|booth|sponsor|print ads|seo/i,"Marketing"],
+  [/paper|printer|pens?|desk|chair|stapler|office|supplies|toner/i,"Office supplies"]];
+function suggest(desc){const m=SUGGEST.find(([re])=>re.test(desc));return m?catName(m[1]):""}
+function paintSuggest(){const s=suggest($("eDesc").value),cur=$("eCat").value.trim();
+  $("eSuggest").innerHTML=s&&cur.toLowerCase()!==s.toLowerCase()?`<span class="mute">suggested:</span> <button class="sm" id="useSug" data-sug="${esc(s)}">${esc(s)}</button>`:"";}
+
+// ---- Math (plain code) ----
+function stats(){const spent={};categories().forEach(c=>spent[c]=0);expenses.forEach(e=>{spent[catName(e.cat)]=r2((spent[catName(e.cat)]||0)+e.amount)});
+  return categories().map(c=>{const s=spent[c]||0,b=budgets[c]??null,has=b!==null&&b!==undefined;
+    const st=!has?"none":s>b?"over":b>0&&s>=0.9*b?"near":"ok";
+    return {cat:c,spent:s,budget:has?b:null,left:has?r2(b-s):null,pct:has&&b>0?s/b*100:(has&&s>0?100:0),status:st};});}
+
+// ---- Render ----
+function render(){
+  const S=stats(),total=r2(S.reduce((t,x)=>t+x.spent,0)),bud=r2(S.reduce((t,x)=>t+(x.budget||0),0));
+  $("catList").innerHTML=categories().map(c=>`<option value="${esc(c)}">`).join("");
+  $("budTable").querySelector("tbody").innerHTML=S.map(x=>`<tr data-cat="${esc(x.cat)}">
+    <td><strong>${esc(x.cat)}</strong></td><td class="num" data-cell="spent">${money(x.spent)}</td>
+    <td class="num"><input aria-label="Budget for ${esc(x.cat)}" type="number" min="0" step="0.01" style="width:110px;text-align:right" value="${x.budget===null?"":x.budget}" placeholder="set" data-bud="${esc(x.cat)}"></td>
+    <td class="num" data-cell="left">${x.budget===null?"—":x.left<0?`<span style="color:var(--red);font-weight:700">over by ${money(-x.left)}</span>`:`${money(x.left)} left`}</td>
+    <td><div class="bar ${x.status==="over"?"over":x.status==="near"?"near":""}"><i style="width:${Math.min(100,x.pct).toFixed(1)}%"></i></div></td>
+    <td data-cell="status">${x.status==="over"?`<span class="st over">OVER BUDGET by ${money(-x.left)}</span>`:x.status==="near"?`<span class="st near">Near limit (${Math.floor(x.pct)}%)</span>`:x.status==="ok"?`<span class="st ok">On track</span>`:`<span class="st none">No budget set</span>`}</td></tr>`).join("");
+  $("budEmpty").style.display=S.length?"none":"block";
+  $("ftSpent").textContent=money(total);$("ftBudget").textContent=money(bud);$("ftLeft").textContent=bud?money(r2(bud-total)):"";
+  $("gTotal").textContent=money(total);$("gBudget").textContent=money(bud);$("gLeft").textContent=money(r2(bud-total));
+  $("gLeft").style.color=bud-total<0?"var(--red)":"";
+  const over=S.filter(x=>x.status==="over");
+  $("overBanner").style.display=over.length?"block":"none";
+  $("overBanner").innerHTML=over.length?`OVER BUDGET: ${over.map(x=>`${esc(x.cat)} (by ${money(-x.left)})`).join(", ")}. Fix before month-end close.`:"";
+  const rows=expenses.slice().sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+  $("expTable").querySelector("tbody").innerHTML=rows.map(e=>`<tr data-exp="${esc(e.id)}"><td>${esc(e.date)}</td><td>${esc(e.desc)}</td><td>${esc(catName(e.cat))}</td><td class="num">${money(e.amount)}</td><td><button class="x" title="Delete expense" data-del="${esc(e.id)}">&times;</button></td></tr>`).join("");
+  $("expEmpty").style.display=expenses.length?"none":"block";
+  window.__spend={total,budget:bud,cats:S};
+  save();
+}
+const msg=(id,h)=>{$(id).innerHTML=h};
+
+// ---- Actions ----
+$("addBtn").onclick=()=>{["eAmt","eCat","eDesc"].forEach(i=>$(i).classList.remove("bad"));
+  const desc=$("eDesc").value.trim(),cat=catName($("eCat").value),amtRaw=$("eAmt").value,amt=num(amtRaw);
+  const errs=[];if(!desc){errs.push("Add a description.");$("eDesc").classList.add("bad")}
+  if(!cat){errs.push("Pick or type a category.");$("eCat").classList.add("bad")}
+  if(!(amt>0)||!isFinite(Number(amtRaw))){errs.push("Amount must be more than $0.");$("eAmt").classList.add("bad")}
+  if(errs.length){$("eErr").textContent=errs.join(" ");msg("addMsg","");return}
+  $("eErr").textContent="";
+  const e={id:newId(),desc,cat,amount:r2(amt),date:$("eDate").value||today()};expenses.push(e);
+  if(!(cat in budgets)&&!Object.keys(budgets).some(k=>k.toLowerCase()===cat.toLowerCase()))budgets[cat]=null;
+  render();msg("addMsg",`Added ${esc(money(e.amount))} to ${esc(cat)}.`);
+  ["eDesc","eCat","eAmt","eDate"].forEach(i=>$(i).value="");paintSuggest();};
+$("eDesc").addEventListener("input",paintSuggest);$("eCat").addEventListener("input",paintSuggest);
+$("bAdd").onclick=()=>{const c=catName($("bCat").value),raw=$("bAmt").value,b=num(raw);
+  if(!c){$("bErr").textContent="Type a category.";return}
+  if(raw===""||b<0||!isFinite(Number(raw))){$("bErr").textContent="Budget must be $0 or more.";return}
+  $("bErr").textContent="";budgets[c]=r2(b);$("bCat").value="";$("bAmt").value="";render();};
+document.addEventListener("input",e=>{const t=e.target;if(t.dataset.bud===undefined)return;const c=t.dataset.bud;
+  budgets[c]=t.value===""?null:Math.max(0,r2(num(t.value)));
+  // update this row in place so typing keeps focus
+  const keep=t.value;render();const again=[...document.querySelectorAll("input[data-bud]")].find(i=>i.dataset.bud===c);if(again){again.focus();again.value=keep;}});
+document.addEventListener("click",e=>{const t=e.target;
+  if(t.id==="useSug"){$("eCat").value=t.dataset.sug;paintSuggest();}
+  if(t.dataset.del){const i=expenses.findIndex(x=>x.id===t.dataset.del);if(i<0)return;undo={expenses:expenses.slice(),budgets:{...budgets}};const x=expenses.splice(i,1)[0];render();
+    msg("listMsg",`Deleted "${esc(x.desc)}" (${esc(money(x.amount))}). <button class="sm" id="undoBtn">Undo</button>`);}
+  if(t.id==="undoBtn"&&undo){expenses=undo.expenses;budgets=undo.budgets;undo=null;render();msg("listMsg","Restored.");}
+});
+const SAMPLE_BUDGETS={"Software":400,"Travel":1200,"Office supplies":300,"Marketing":2000,"Meals":400};
+const SAMPLE=[["Figma subscription","Software",45],["Slack (team plan)","Software",87.5],["GitHub Enterprise","Software",210],["Notion team plan","Software",96],
+  ["Flight SFO to NYC","Travel",412.3],["Hotel, 2 nights","Travel",586],["Uber to client site","Travel",48.2],
+  ["Printer paper + toner","Office supplies",42.99],["Standing desk","Office supplies",229],
+  ["LinkedIn ads","Marketing",750],["Conference booth deposit","Marketing",600],["Team lunch","Meals",132.4]];
+function sampleData(){const d=new Date(now()),ym=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");
+  return {budgets:{...SAMPLE_BUDGETS},expenses:SAMPLE.map(([desc,cat,amount],i)=>({id:newId(),desc,cat,amount,date:`${ym}-${String(1+(i*2)%27).padStart(2,"0")}`}))};}
+$("sampleBtn").onclick=()=>{undo=expenses.length||Object.keys(budgets).length?{expenses:expenses.slice(),budgets:{...budgets}}:null;const s=sampleData();expenses=s.expenses;budgets=s.budgets;render();
+  msg("listMsg",`Loaded ${expenses.length} sample expenses.`+(undo?` <button class="sm" id="undoBtn">Undo</button>`:""));};
+$("clearBtn").onclick=()=>{if(!expenses.length&&!Object.keys(budgets).length){msg("listMsg","Nothing to clear.");return}
+  undo={expenses:expenses.slice(),budgets:{...budgets}};expenses=[];budgets={};render();msg("listMsg",`Cleared everything. <button class="sm" id="undoBtn">Undo</button>`);};
+
+// ---- Start: remembered data, or the sample on a first visit ----
+const stored=load();
+if(stored){expenses=stored.expenses;budgets=stored.budgets}else{const s=sampleData();expenses=s.expenses;budgets=s.budgets}
+render();
+</script>
+</body>
+</html>
