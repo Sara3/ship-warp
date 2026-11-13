@@ -18,7 +18,7 @@ Prioritization rule: (1) don't break what a customer already reviewed, (2) unblo
 ## Prioritized to build
 | # | Item | Why / customer | Effort |
 |---|------|----------------|--------|
-| P0 | Regression test (`node test.js`) for calc math, GST, margin floor, sq-ft line | Basics are re-checked every review; a broken total loses all deals | S |
+| [x] P0 | Regression test (`node test.js`, run `npm i` once) for calc math, GST, margin floor, sq-ft line | Basics are re-checked every review; a broken total loses all deals | S |
 | P0 | Real AI on free text: missing-line check reads scope notes with a small fast model behind a serverless function (key on server, keyword rules as fallback, <3s timeout) | Product brief requires real AI wherever free text is judged | M, needs API key + Vercel/Netlify (user) |
 | P1 | Electrical/solar templates default to AUD + GST 10% (already), add a visible "AU: GST 10%" quick toggle next to the total; "labour" spelling when AUD/NZD | Liam (up to $45K) | S |
 | P1 | Per-line markup override + "change-order" line type that shows separately on the breakdown | Kwame (up to $90K): change orders ate margin on two loss jobs | S |

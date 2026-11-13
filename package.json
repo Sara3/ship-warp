@@ -1,0 +1,7 @@
+{
+  "name": "bidbench",
+  "private": true,
+  "description": "BidBench by Ship Warp Sorcery. Static single-file app (index.html); package.json only for the regression test.",
+  "scripts": { "test": "node test.js" },
+  "devDependencies": { "jsdom": "^24.0.0" }
+}
