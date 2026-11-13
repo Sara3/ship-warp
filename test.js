@@ -158,6 +158,39 @@ const startsWithMoney = (s, m) => s === m || s.startsWith(m + " ");
   ok(!t.shown("rcSummary"), "switching template clears recurring section");
 }
 
+// ---------- P1: per-line markup override + change orders (Kwame) ----------
+{
+  const t = boot();
+  t.preset("landscape");
+  ok(!t.shown("coRow"), "no change-order row when none");
+  const mo = t.d.querySelector('#matTable input[data-f="4"]');
+  eq(mo.placeholder, "20", "override placeholder shows global markup");
+  t.set(mo, "30");
+  ok(t.txt("sMark").startsWith("$2,326.72"), `override raises markup on that line only (got ${t.txt("sMark")})`);
+  ok(t.txt("sMark").includes("blended"), "markup shows blended % with overrides");
+  eq(t.txt("sTotal"), "$12,970.32", "total with override");
+  t.set(t.d.querySelector('#matTable input[data-f="4"]'), "");
+  ok(t.txt("sMark").startsWith("$2,128.72 (20%)"), "clearing override restores global markup");
+  eq(t.txt("sTotal"), "$12,772.32", "total restored");
+  const lo = t.d.querySelector('#labTable input[data-f="3"]');
+  t.set(lo, "10");
+  ok(t.txt("sMark").startsWith("$1,957.12"), `labor override (got ${t.txt("sMark")})`);
+  t.set(t.d.querySelector('#labTable input[data-f="3"]'), "");
+  t.$("addCo").click();
+  t.set(t.d.querySelector('#coTable input[data-f="1"]'), "1000");
+  ok(t.shown("coRow"), "change-order row shown");
+  eq(t.txt("sCO"), "$1,200.00", "change order priced at global markup");
+  ok(t.txt("sMark").startsWith("$2,128.72"), "base markup unchanged by change order");
+  ok(startsWithMoney(t.txt("sDirect"), "$9,676.00"), "direct unchanged by change order");
+  eq(t.txt("sTotal"), "$13,972.32", "total includes change order");
+  eq(t.txt("sProfit"), "$2,328.72", "profit includes change-order markup");
+  t.set(t.d.querySelector('#coTable input[data-f="2"]'), "30");
+  eq(t.txt("sCO"), "$1,300.00", "change order own markup");
+  t.d.querySelector('#coTable [data-del="c"]').click();
+  ok(!t.shown("coRow"), "change-order row hidden after removal");
+  eq(t.txt("sTotal"), "$12,772.32", "total restored after removing change order");
+}
+
 // @@NEXT@@
 
 console.log(`${failures ? "FAILED" : "PASSED"}: ${passes} passed, ${failures} failed`);

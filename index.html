@@ -72,7 +72,7 @@
 
   <div class="card">
     <h2>Materials</h2>
-    <table id="matTable"><thead><tr><th>Item</th><th class="num">Qty</th><th>Unit</th><th class="num">Unit cost</th><th class="num">Line total</th><th></th></tr></thead><tbody></tbody></table>
+    <table id="matTable"><thead><tr><th>Item</th><th class="num">Qty</th><th>Unit</th><th class="num">Unit cost</th><th class="num" title="Leave blank to use the global markup">Markup %</th><th class="num">Line total</th><th></th></tr></thead><tbody></tbody></table>
     <div class="actions"><button id="addMat">+ Material line</button></div>
     <div style="margin-top:12px;padding:10px;border:1px dashed var(--line);border-radius:8px">
       <strong style="font-size:14px">Square-footage line</strong>
@@ -89,8 +89,15 @@
 
   <div class="card">
     <h2 class="lw">Labor</h2>
-    <table id="labTable"><thead><tr><th>Crew / task</th><th class="num">Hours</th><th class="num">Rate / hr</th><th class="num">Line total</th><th></th></tr></thead><tbody></tbody></table>
+    <table id="labTable"><thead><tr><th>Crew / task</th><th class="num">Hours</th><th class="num">Rate / hr</th><th class="num" title="Leave blank to use the global markup">Markup %</th><th class="num">Line total</th><th></th></tr></thead><tbody></tbody></table>
     <div class="actions"><button id="addLab">+ <span class="lw">Labor</span> line</button></div>
+  </div>
+
+  <div class="card" id="coCard">
+    <h2>Change orders</h2>
+    <p class="mute" style="margin-top:0">Price change orders on their own, with their own markup, so they show separately on the breakdown and don't quietly eat your contingency or margin.</p>
+    <table id="coTable" style="display:none"><thead><tr><th>Change order</th><th class="num">Cost</th><th class="num" title="Leave blank to use the global markup">Markup %</th><th class="num">Price</th><th></th></tr></thead><tbody></tbody></table>
+    <div class="actions"><button id="addCo">+ Change-order line</button></div>
   </div>
 
   <div class="card" id="rcCard">
@@ -144,6 +151,7 @@
     <div><span>Direct cost</span><span id="sDirect"></span></div>
     <div><span>Contingency</span><span id="sCont"></span></div>
     <div><span>Markup</span><span id="sMark"></span></div>
+    <div id="coRow" style="display:none"><span>Change orders <small class="mute" id="sCOd"></small></span><span id="sCO"></span></div>
     <div id="exRow"><span>Total ex GST</span><span id="sEx"></span></div>
     <div id="gstRow"><span id="gstLabel">GST</span><span id="sGst"></span></div>
     <div class="total"><span id="totalLabel">Bid total</span><span id="sTotal"></span></div>
@@ -194,7 +202,8 @@ const RULES=[
   {k:"travel",t:"Travel / mobilization",match:/travel|mobili|call-?out/i,when:/./,addLab:["Travel / mobilization",2,60]}
 ];
 const $=id=>document.getElementById(id);
-let mats=[],labs=[],rcs=[],ots=[];
+let mats=[],labs=[],rcs=[],ots=[],cos=[];
+function ov(v){return v===undefined||v===null||String(v).trim()===""?null:num(v)}
 
 function fmt(n){const c=$("cur").value;return (c==="USD"?"$":c+" $")+n.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}
 function labWord(){return ["AUD","NZD"].includes($("cur").value)?"Labour":"Labor"}
@@ -208,6 +217,7 @@ function render(){
     <td class="num"><input aria-label="Quantity" type="number" step="any" style="width:80px" value="${m[1]}" data-t="m" data-i="${i}" data-f="1"></td>
     <td><input aria-label="Unit" style="width:70px" value="${esc(m[2])}" data-t="m" data-i="${i}" data-f="2"></td>
     <td class="num"><input aria-label="Unit cost" type="number" step="any" style="width:90px" value="${m[3]}" data-t="m" data-i="${i}" data-f="3"></td>
+    <td class="num"><input class="mo" aria-label="Markup % override" type="number" step="any" style="width:70px" value="${esc(m[4]??"")}" data-t="m" data-i="${i}" data-f="4"></td>
     <td class="num" id="mt${i}"></td>
     <td><button class="x" title="Remove line" data-del="m" data-i="${i}">&times;</button></td></tr>`).join("");
   const lb=$("labTable").querySelector("tbody");
@@ -215,8 +225,16 @@ function render(){
     <td><input aria-label="Labour/labor task" value="${esc(l[0])}" data-t="l" data-i="${i}" data-f="0"></td>
     <td class="num"><input aria-label="Hours" type="number" step="any" style="width:80px" value="${l[1]}" data-t="l" data-i="${i}" data-f="1"></td>
     <td class="num"><input aria-label="Rate per hour" type="number" step="any" style="width:90px" value="${l[2]}" data-t="l" data-i="${i}" data-f="2"></td>
+    <td class="num"><input class="mo" aria-label="Markup % override" type="number" step="any" style="width:70px" value="${esc(l[3]??"")}" data-t="l" data-i="${i}" data-f="3"></td>
     <td class="num" id="lt${i}"></td>
     <td><button class="x" title="Remove line" data-del="l" data-i="${i}">&times;</button></td></tr>`).join("");
+  $("coTable").style.display=cos.length?"":"none";
+  $("coTable").querySelector("tbody").innerHTML=cos.map((x,i)=>`<tr>
+    <td><input aria-label="Change order description" value="${esc(x[0])}" data-t="c" data-i="${i}" data-f="0"></td>
+    <td class="num"><input aria-label="Change order cost" type="number" step="any" style="width:100px" value="${esc(x[1])}" data-t="c" data-i="${i}" data-f="1"></td>
+    <td class="num"><input class="mo" aria-label="Markup % override" type="number" step="any" style="width:70px" value="${esc(x[2]??"")}" data-t="c" data-i="${i}" data-f="2"></td>
+    <td class="num" id="ct${i}"></td>
+    <td><button class="x" title="Remove line" data-del="c" data-i="${i}">&times;</button></td></tr>`).join("");
   [["rcTable",rcs,"r","Recurring","Monthly unit price"],["otTable",ots,"o","One-time","Unit price"]].forEach(([tid,arr,k,nm,pl])=>{
     $(tid).style.display=arr.length?"":"none";
     $(tid).querySelector("tbody").innerHTML=arr.map((x,i)=>`<tr>
@@ -234,16 +252,24 @@ function calc(){
   labs.forEach((l,i)=>{const t=num(l[1])*num(l[2]);lab+=t;const c=$("lt"+i);if(c)c.textContent=fmt(t)});
   const direct=mat+lab;
   const cont=direct*num($("cont").value)/100;
-  const mark=(direct+cont)*num($("markup").value)/100;
-  const sub=direct+cont+mark;
+  const gm=num($("markup").value),cf=1+num($("cont").value)/100;
+  let mark=(direct+cont)*gm/100,overridden=false;
+  // per-line markup overrides: adjust only the overridden lines (no overrides = original formula exactly)
+  mats.forEach(m=>{const o=ov(m[4]);if(o!==null){overridden=true;mark+=num(m[1])*num(m[3])*cf*(o-gm)/100}});
+  labs.forEach(l=>{const o=ov(l[3]);if(o!==null){overridden=true;mark+=num(l[1])*num(l[2])*cf*(o-gm)/100}});
+  let coCost=0,coMark=0;
+  cos.forEach((x,i)=>{const c=num(x[1]),o=ov(x[2]),mk=c*(o===null?gm:o)/100;coCost+=c;coMark+=mk;const e=$("ct"+i);if(e)e.textContent=fmt(c+mk)});
+  document.querySelectorAll("input.mo").forEach(e=>{e.placeholder=gm});
+  const sub=direct+cont+mark+coCost+coMark;
   const g=num($("gst").value);
   const gst=sub*g/100;
   const total=sub+gst;
-  const profit=mark;
+  const profit=mark+coMark;
   const margin=sub>0?profit/sub*100:0;
   $("sMat").textContent=fmt(mat);$("sLab").textContent=fmt(lab);$("sDirect").textContent=fmt(direct);
   $("sCont").textContent=fmt(cont)+` (${num($("cont").value)}%)`;
-  $("sMark").textContent=fmt(mark)+` (${num($("markup").value)}%)`;
+  $("sMark").textContent=fmt(mark)+(overridden?` (blended ${(direct+cont>0?mark/(direct+cont)*100:0).toFixed(1)}%)`:` (${num($("markup").value)}%)`);
+  $("coRow").style.display=cos.length?"flex":"none";$("sCO").textContent=fmt(coCost+coMark);$("sCOd").textContent=`(cost ${fmt(coCost)} + markup ${fmt(coMark)})`;
   $("gstRow").style.display=g?"flex":"none";$("exRow").style.display=g?"flex":"none";$("sEx").textContent=fmt(sub);$("gstLabel").textContent=`GST ${g}%`;$("sGst").textContent=fmt(gst);
   $("totalLabel").textContent=g?"Final total inc. GST":"Bid total";
   $("sTotal").textContent=fmt(total);$("sProfit").textContent=fmt(profit);
@@ -269,21 +295,21 @@ function calc(){
   $("rcMrc").textContent=fmt(mrc);$("rcNrc").textContent=fmt(nrc);$("rcFy").textContent=fmt(fy);$("rcTcv").textContent=fmt(tcv);
   $("rcFyMonths").textContent=fyM;$("rcTermOut").textContent=term;$("rcTcvLabel").textContent=`Total contract value (${term} mo)`;
   window.__rc={mrc,nrc,firstYear:fy,tcv,term};
-  window.__bid={materials:mat,labor:lab,direct,contingency:cont,markup:mark,gst,total,profit,marginPct:margin,floorPct:floor,belowFloor:below};
+  window.__bid={materials:mat,labor:lab,direct,contingency:cont,markup:mark,changeOrderCost:coCost,changeOrderMarkup:coMark,gst,total,profit,marginPct:margin,floorPct:floor,belowFloor:below};
 }
 
 function load(p){
   const P=PRESETS[p];
   $("job").value=P.job;$("desc").value=P.desc;
   mats=P.mats.map(r=>r.slice());labs=P.labs.map(r=>r.slice());
-  rcs=(P.rcs||[]).map(r=>r.slice());ots=(P.ots||[]).map(r=>r.slice());$("rcTerm").value=P.term||36;
+  cos=(P.cos||[]).map(r=>r.slice());rcs=(P.rcs||[]).map(r=>r.slice());ots=(P.ots||[]).map(r=>r.slice());$("rcTerm").value=P.term||36;
   if(P.client)$("client").value=P.client;
   $("markup").value=P.markup;$("cont").value=P.cont;$("cur").value=P.cur;$("gst").value=P.gst;
   $("flags").innerHTML="";render();
 }
 
 document.addEventListener("input",e=>{
-  const t=e.target;if(t.dataset.t){const arr={m:mats,l:labs,r:rcs,o:ots}[t.dataset.t];const f=+t.dataset.f;
+  const t=e.target;if(t.dataset.t){const arr={m:mats,l:labs,r:rcs,o:ots,c:cos}[t.dataset.t];const f=+t.dataset.f;
     arr[+t.dataset.i][f]=(t.type==="number")?t.value:t.value;calc();}
   else if(["markup","cont","cur","gst","floor","aLen","aWid","aPrice","rcTerm"].includes(t.id))calc();
 });
@@ -291,12 +317,13 @@ document.addEventListener("change",e=>{if(["cur","gst","lockCont"].includes(e.ta
 document.addEventListener("click",e=>{
   const t=e.target;
   if(t.dataset.preset)load(t.dataset.preset);
-  if(t.dataset.del){({m:mats,l:labs,r:rcs,o:ots}[t.dataset.del]).splice(+t.dataset.i,1);render();}
+  if(t.dataset.del){({m:mats,l:labs,r:rcs,o:ots,c:cos}[t.dataset.del]).splice(+t.dataset.i,1);render();}
   if(t.dataset.addrule!==undefined){const r=RULES[+t.dataset.addrule];if(r.add)mats.push(r.add.slice());if(r.addLab)labs.push(r.addLab.slice());render();t.closest(".flag").remove();}
 });
 $("addMat").onclick=()=>{mats.push(["",1,"ea",0]);render()};
 $("aAdd").onclick=()=>{const L=num($("aLen").value),W=num($("aWid").value);mats.push([`${$("aName").value} (${L}x${W} ft)`,L*W,"sq ft",num($("aPrice").value)]);render();};
 $("addLab").onclick=()=>{labs.push(["",0,0]);render()};
+$("addCo").onclick=()=>{cos.push(["Change order",0,""]);render()};
 $("addRc").onclick=()=>{rcs.push(["",1,0]);render()};
 $("addOt").onclick=()=>{ots.push(["",1,0]);render()};
 $("auGst").onclick=()=>{const on=$("auGst").getAttribute("aria-pressed")==="true";
@@ -304,7 +331,7 @@ $("auGst").onclick=()=>{const on=$("auGst").getAttribute("aria-pressed")==="true
 
 function ruleCheck(){
   const scope=$("desc").value+" "+$("job").value;
-  const lines=mats.map(m=>m[0]).concat(labs.map(l=>l[0])).join(" | ")+" "+scope;
+  const lines=mats.map(m=>m[0]).concat(labs.map(l=>l[0]),cos.map(c=>"change order "+c[0])).join(" | ")+" "+scope;
   const out=[];
   RULES.forEach((r,i)=>{if(r.when.test(scope+" "+lines)&&!r.match.test(lines))out.push({i,t:r.t})});
   return out;
@@ -334,7 +361,8 @@ $("copyBtn").onclick=()=>{
   const txt=[`BID: ${$("job").value} for ${$("client").value}`,
     ...mats.filter(m=>m[0]).map(m=>`  ${m[0]}: ${m[1]} ${m[2]} x ${fmt(num(m[3]))} = ${fmt(num(m[1])*num(m[3]))}`),
     ...labs.filter(l=>l[0]).map(l=>`  ${l[0]}: ${l[1]} hrs x ${fmt(num(l[2]))} = ${fmt(num(l[1])*num(l[2]))}`),
-    `Materials ${fmt(b.materials)} | ${labWord()} ${fmt(b.labor)} | Contingency ${fmt(b.contingency)} | Markup ${fmt(b.markup)}`+(b.gst?` | GST ${fmt(b.gst)}`:""),
+    ...cos.filter(x=>x[0]).map(x=>`  CHANGE ORDER ${x[0]}: cost ${fmt(num(x[1]))}`),
+    `Materials ${fmt(b.materials)} | ${labWord()} ${fmt(b.labor)} | Contingency ${fmt(b.contingency)} | Markup ${fmt(b.markup)}`+(cos.length?` | Change orders ${fmt(b.changeOrderCost+b.changeOrderMarkup)}`:"")+(b.gst?` | GST ${fmt(b.gst)}`:""),
     `TOTAL ${fmt(b.total)} | Profit ${fmt(b.profit)} | Margin ${b.marginPct.toFixed(1)}%`,
     ...((rcs.length||ots.length)?["RECURRING (monthly):",...rcs.filter(x=>x[0]).map(x=>`  ${x[0]}: ${x[1]} x ${fmt(num(x[2]))}/mo = ${fmt(num(x[1])*num(x[2]))}/mo`),
       "ONE-TIME:",...ots.filter(x=>x[0]).map(x=>`  ${x[0]}: ${x[1]} x ${fmt(num(x[2]))} = ${fmt(num(x[1])*num(x[2]))}`),
