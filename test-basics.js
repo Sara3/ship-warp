@@ -66,6 +66,14 @@ function boot(fetchImpl) {
   eq(t.$("cont").disabled, false, "unlocking makes it editable again");
 }
 
+{ // area helper title follows the unit, and Units comes first (NZ roofing buyer)
+  const t = boot();
+  eq(t.txt("aTitle"), "Area line (sq ft)", "area title in feet");
+  t.set("aUnit", "m");
+  eq(t.txt("aTitle"), "Area line (m²)", "area title follows metres");
+  ok(t.$("aUnit").compareDocumentPosition(t.$("aName")) & 4, "Units select comes before the item field");
+}
+
 async function aiTests() {
   { // AI suggestions are shown and can be added as lines
     const calls = [];
