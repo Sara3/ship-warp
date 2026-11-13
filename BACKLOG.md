@@ -23,7 +23,7 @@ Prioritization rule: (1) don't break what a customer already reviewed, (2) unblo
 | [x] TOP | Recurring vs one-time charges card (term, MRC, one-time/NRC, first-year, total contract value) + "Enterprise telecom quote" template | Kallang Pacific Telecom (sells to banks/government) | S |
 | [x] P1 | Electrical/solar templates default to AUD + GST 10% (already), add a visible "AU: GST 10%" quick toggle next to the total; "labour" spelling when AUD/NZD | Liam (up to $45K) | S |
 | [x] P1 | Per-line markup override + "change-order" line type that shows separately on the breakdown | Kwame (up to $90K): change orders ate margin on two loss jobs | S |
-| P1 | Save / load / duplicate bids in the browser (localStorage, try/catch) | Plumbline prices several hundred bids a year | S |
+| [x] P1 | Save / load / duplicate bids in the browser (localStorage, try/catch) | Plumbline prices several hundred bids a year | S |
 | P2 | Copy-ready client bid (clean itemized text/HTML without internal margin) | All three need to send it out | S |
 | P2 | NZ preset (NZD + GST 15%) roofing/solar template | Kauri Ridge Roofing (next prospect) | S |
 | P2 | Moving/storage quote template (crew hours, truck, materials, storage months) | Brennan & Daughters (prospect) | S |

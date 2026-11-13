@@ -68,6 +68,14 @@
       <button data-preset="telecom">Enterprise telecom quote</button>
       <button data-preset="blank">Blank</button>
     </div>
+    <div class="actions" id="savedBox" style="border-top:1px dashed var(--line);padding-top:10px">
+      <button class="primary" id="saveBtn">Save bid</button>
+      <button id="dupBtn">Duplicate</button>
+      <select id="savedSel" aria-label="Saved bids" style="width:auto;min-width:180px;flex:1"></select>
+      <button id="loadBtn">Load</button>
+      <button id="delBtn">Delete</button>
+    </div>
+    <p class="mute" id="saveMsg" style="margin:6px 0 0">Bids are saved in this browser only.</p>
   </div>
 
   <div class="card">
@@ -299,7 +307,7 @@ function calc(){
 }
 
 function load(p){
-  const P=PRESETS[p];
+  const P=PRESETS[p];curId=null;
   $("job").value=P.job;$("desc").value=P.desc;
   mats=P.mats.map(r=>r.slice());labs=P.labs.map(r=>r.slice());
   cos=(P.cos||[]).map(r=>r.slice());rcs=(P.rcs||[]).map(r=>r.slice());ots=(P.ots||[]).map(r=>r.slice());$("rcTerm").value=P.term||36;
@@ -356,6 +364,34 @@ $("checkBtn").onclick=async()=>{
   }catch(_){}
 };
 
+// ---- Save / load / duplicate (this browser only) ----
+const SKEY="bidbench.bids.v1";let curId=null,lastDeleted=null;
+function readBids(){try{const v=JSON.parse(window.localStorage.getItem(SKEY)||"[]");return Array.isArray(v)?v.filter(b=>b&&b.id&&b.data):[]}catch(e){return []}}
+function writeBids(v){try{window.localStorage.setItem(SKEY,JSON.stringify(v));return true}catch(e){return false}}
+const SFIELDS=["job","client","desc","markup","cont","floor","lockCont","cur","gst","rcTerm"];
+function snapshot(){const d={};SFIELDS.forEach(f=>d[f]=$(f).value);d.mats=mats;d.labs=labs;d.cos=cos;d.rcs=rcs;d.ots=ots;return JSON.parse(JSON.stringify(d))}
+function restore(d){SFIELDS.forEach(f=>{if(d[f]!==undefined)$(f).value=d[f]});
+  const A=x=>Array.isArray(x)?x.filter(Array.isArray).map(r=>r.slice()):[];
+  mats=A(d.mats);labs=A(d.labs);cos=A(d.cos);rcs=A(d.rcs);ots=A(d.ots);$("flags").innerHTML="";render();}
+function bidName(){return $("job").value.trim()||"Untitled bid"}
+function refreshSaved(sel){const bids=readBids();
+  $("savedSel").innerHTML=bids.length?bids.map(b=>`<option value="${esc(b.id)}">${esc(b.name)} - ${esc(b.totalText||"")} (${esc(new Date(b.savedAt).toLocaleDateString())})</option>`).join(""):'<option value="">No saved bids yet</option>';
+  if(sel)$("savedSel").value=sel;else if(curId&&bids.some(b=>b.id===curId))$("savedSel").value=curId;}
+function msg(h){$("saveMsg").innerHTML=h}
+function putBid(id,name){const bids=readBids();const e={id,name,savedAt:Date.now(),totalText:$("sTotal").textContent,data:snapshot()};
+  const i=bids.findIndex(b=>b.id===id);if(i>=0)bids[i]=e;else bids.unshift(e);return writeBids(bids);}
+function newId(){return "b"+Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
+$("saveBtn").onclick=()=>{const isNew=!curId||!readBids().some(b=>b.id===curId);if(isNew)curId=newId();
+  if(putBid(curId,bidName())){refreshSaved(curId);msg(`${isNew?"Saved":"Updated"} "<strong>${esc(bidName())}</strong>" in this browser.`)}else msg("Could not save: this browser is blocking local storage.");};
+$("dupBtn").onclick=()=>{$("job").value=bidName()+" (copy)";curId=newId();
+  if(putBid(curId,bidName())){refreshSaved(curId);msg(`Duplicated. You are now editing "<strong>${esc(bidName())}</strong>"; the original is unchanged.`)}else msg("Could not save: this browser is blocking local storage.");};
+$("loadBtn").onclick=()=>{const b=readBids().find(x=>x.id===$("savedSel").value);if(!b){msg("Nothing to load yet. Save a bid first.");return}
+  restore(b.data);curId=b.id;refreshSaved(curId);msg(`Loaded "<strong>${esc(b.name)}</strong>".`);};
+$("delBtn").onclick=()=>{const bids=readBids();const i=bids.findIndex(x=>x.id===$("savedSel").value);if(i<0){msg("Nothing to delete.");return}
+  lastDeleted=bids.splice(i,1)[0];writeBids(bids);if(curId===lastDeleted.id)curId=null;refreshSaved();
+  msg(`Deleted "<strong>${esc(lastDeleted.name)}</strong>". <button id="undoDel" style="padding:2px 8px;font-size:12px">Undo</button>`);};
+document.addEventListener("click",e=>{if(e.target.id==="undoDel"&&lastDeleted){const bids=readBids();bids.unshift(lastDeleted);writeBids(bids);refreshSaved(lastDeleted.id);msg(`Restored "<strong>${esc(lastDeleted.name)}</strong>".`);lastDeleted=null;}});
+
 $("copyBtn").onclick=()=>{
   const b=window.__bid;
   const txt=[`BID: ${$("job").value} for ${$("client").value}`,
@@ -370,6 +406,7 @@ $("copyBtn").onclick=()=>{
   (navigator.clipboard?navigator.clipboard.writeText(txt):Promise.reject()).then(()=>$("copied").textContent="Copied.").catch(()=>{$("copied").textContent="Copy failed; select and copy below.";$("copied").innerText=txt});
 };
 load("landscape");
+refreshSaved();
 </script>
 </body>
 </html>

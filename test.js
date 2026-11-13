@@ -11,12 +11,13 @@ let failures = 0, passes = 0;
 function ok(cond, msg) { if (cond) { passes++; } else { failures++; console.error("FAIL: " + msg); } }
 function eq(a, b, msg) { ok(a === b, `${msg}: expected ${JSON.stringify(b)}, got ${JSON.stringify(a)}`); }
 
-function boot() {
+function boot(seed) {
   const { VirtualConsole } = require("jsdom");
   const vc = new VirtualConsole();
   vc.on("jsdomError", e => { if (!/Not implemented/.test(e.message)) ok(false, "page script error: " + e.message); });
   vc.on("error", e => ok(false, "console.error on page: " + e));
-  const dom = new JSDOM(SRC, { runScripts: "dangerously", url: "http://localhost/", pretendToBeVisual: true, virtualConsole: vc });
+  const dom = new JSDOM(SRC, { runScripts: "dangerously", url: "http://localhost/", pretendToBeVisual: true, virtualConsole: vc,
+    beforeParse: w => { if (seed) Object.entries(seed).forEach(([k, v]) => w.localStorage.setItem(k, v)); } });
   const w = dom.window, d = w.document;
   const $ = id => d.getElementById(id);
   const set = (id, v) => { const el = typeof id === "string" ? $(id) : id; el.value = v;
@@ -34,7 +35,7 @@ const startsWithMoney = (s, m) => s === m || s.startsWith(m + " ");
   ok(!/\b(alert|confirm|prompt)\s*\(/.test(script), "no alert/confirm/prompt calls");
   ok(!/\bfetch\s*\(|XMLHttpRequest|<script[^>]+src=|<link[^>]+href=["']https?:/i.test(SRC), "no external network calls");
   const ls = (script.match(/localStorage/g) || []).length;
-  if (ls) ok(/try\s*{[^]*localStorage/.test(script), "localStorage wrapped in try/catch");
+  script.split("\n").filter(l => l.includes("localStorage")).forEach(l => ok(/try\s*{/.test(l), "localStorage access wrapped in try: " + l.trim().slice(0, 60)));
 }
 
 // ---------- required ids, labels, branding ----------
@@ -189,6 +190,40 @@ const startsWithMoney = (s, m) => s === m || s.startsWith(m + " ");
   t.d.querySelector('#coTable [data-del="c"]').click();
   ok(!t.shown("coRow"), "change-order row hidden after removal");
   eq(t.txt("sTotal"), "$12,772.32", "total restored after removing change order");
+}
+
+// ---------- P1: save / load / duplicate (Plumbline) ----------
+{
+  const t = boot();
+  const n = () => JSON.parse(t.w.localStorage.getItem("bidbench.bids.v1") || "[]");
+  t.preset("landscape");
+  t.$("saveBtn").click();
+  eq(n().length, 1, "save creates one bid");
+  ok(/Saved/.test(t.txt("saveMsg")), "save message");
+  t.set("markup", "25"); t.$("saveBtn").click();
+  eq(n().length, 1, "second save updates, not duplicates");
+  t.set("markup", "20"); t.$("saveBtn").click();
+  t.preset("electrical");
+  ok(t.txt("sTotal").startsWith("AUD"), "switched to another template");
+  t.$("loadBtn").click();
+  eq(t.txt("sTotal"), "$12,772.32", "load restores saved bid total");
+  eq(t.$("job").value, "Backyard paver patio + retaining wall", "load restores job name");
+  t.$("dupBtn").click();
+  eq(n().length, 2, "duplicate adds a copy");
+  ok(t.$("job").value.endsWith("(copy)"), "duplicate renamed (copy)");
+  eq(t.txt("sTotal"), "$12,772.32", "duplicate keeps lines");
+  t.$("delBtn").click();
+  eq(n().length, 1, "delete removes selected bid");
+  t.$("undoDel").click();
+  eq(n().length, 2, "undo restores deleted bid");
+  // persisted bids survive a reload (pre-seeded storage), and bad JSON never breaks the page
+  const t2 = boot({ "bidbench.bids.v1": t.w.localStorage.getItem("bidbench.bids.v1") });
+  eq(t2.d.querySelectorAll("#savedSel option").length, 2, "saved bids listed after reload");
+  eq(t2.txt("sTotal"), "$12,772.32", "page still opens on landscape default");
+  const t3 = boot({ "bidbench.bids.v1": "{not json" });
+  eq(t3.txt("sTotal"), "$12,772.32", "corrupt storage does not break page");
+  t3.$("loadBtn").click();
+  ok(/Nothing to load/.test(t3.txt("saveMsg")), "load with nothing saved shows hint");
 }
 
 // @@NEXT@@
