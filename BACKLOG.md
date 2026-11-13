@@ -12,7 +12,7 @@ Prioritization rule: (1) don't break what a customer already reviewed, (2) unblo
 - [x] Margin floor (default 15%): red + "do not send" + markup needed; no warning when healthy (Kwame, Plumbline)
 - [x] Locked contingency (change-order cushion) (Kwame)
 - [x] GST: "Total ex GST", GST 10% line, "Final total inc. GST" (Liam, Tallowwood)
-- [x] Square-footage line: length x width x $/sq ft, drops into bid (Arne, Brekke)
+- [x] Square-footage line: length x width x $/sq ft, drops into bid (Arne, Brekke); added line stays linked to the helper (Kauri Ridge review)
 - [x] Team name in header + footer
 
 ## Prioritized to build

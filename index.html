@@ -108,6 +108,7 @@
       </div>
       <p class="mute" id="aOut" style="margin:8px 0"></p>
       <button class="primary" id="aAdd" data-i18n="Add to bid">Add to bid</button>
+      <p class="mute" id="aLinkNote" style="margin:6px 0 0;color:var(--ok)"></p>
     </div>
   </div>
 
@@ -404,7 +405,7 @@ const AREA_DEFAULT={name:"Paver patio (installed)",unit:"ft",len:20,wid:20,price
 function setArea(a){$("aName").value=a.name;$("aUnit").value=a.unit;$("aLen").value=a.len;$("aWid").value=a.wid;$("aPrice").value=a.price;$("aPitch").value=a.pitch;$("aWaste").value=a.waste}
 
 function load(p){
-  const P=PRESETS[p];curId=null;setArea(P.area||AREA_DEFAULT);
+  const P=PRESETS[p];curId=null;areaLink=null;setArea(P.area||AREA_DEFAULT);
   $("job").value=P.job;$("desc").value=P.desc;
   mats=P.mats.map(r=>r.slice());labs=P.labs.map(r=>r.slice());
   cos=(P.cos||[]).map(r=>r.slice());rcs=(P.rcs||[]).map(r=>r.slice());ots=(P.ots||[]).map(r=>r.slice());$("rcTerm").value=P.term||36;
@@ -415,10 +416,12 @@ function load(p){
 
 document.addEventListener("input",e=>{
   const t=e.target;if(t.dataset.t){const arr={m:mats,l:labs,r:rcs,o:ots,c:cos}[t.dataset.t];const f=+t.dataset.f;
+    if(t.dataset.t==="m"&&arr[+t.dataset.i]===areaLink){areaLink=null;areaLinkNote();}
     arr[+t.dataset.i][f]=(t.type==="number")?t.value:t.value;calc();}
-  else if(["markup","cont","cur","gst","floor","aLen","aWid","aPrice","aPitch","aWaste","aName","aUnit","rcTerm","cdName","cdPeople","cdDays","cdHours","cdRate"].includes(t.id))calc();
+  else if(["aLen","aWid","aPrice","aPitch","aWaste","aName","aUnit"].includes(t.id)){if(syncAreaLine())render();else calc();areaLinkNote();}
+  else if(["markup","cont","cur","gst","floor","rcTerm","cdName","cdPeople","cdDays","cdHours","cdRate"].includes(t.id))calc();
 });
-document.addEventListener("change",e=>{if(["cur","gst","lockCont","aUnit"].includes(e.target.id))calc()});
+document.addEventListener("change",e=>{if(e.target.id==="aUnit"&&syncAreaLine()){render();areaLinkNote();return;}if(["cur","gst","lockCont","aUnit"].includes(e.target.id))calc()});
 document.addEventListener("click",e=>{
   const t=e.target;
   if(t.dataset.preset)load(t.dataset.preset);
@@ -426,7 +429,10 @@ document.addEventListener("click",e=>{
   if(t.dataset.addrule!==undefined){const r=RULES[+t.dataset.addrule];if(r.add)mats.push(r.add.slice());if(r.addLab)labs.push(r.addLab.slice());render();t.closest(".flag").remove();}
 });
 $("addMat").onclick=()=>{mats.push(["",1,"ea",0]);render()};
-$("aAdd").onclick=()=>{const a=areaCalc();mats.push([a.name,a.qty,a.A,a.P]);render();};
+let areaLink=null;
+function syncAreaLine(){if(!areaLink)return false;if(!mats.includes(areaLink)){areaLink=null;return false;}const a=areaCalc();areaLink[0]=a.name;areaLink[1]=a.qty;areaLink[2]=a.A;areaLink[3]=a.P;return true;}
+function areaLinkNote(){const n=$("aLinkNote");if(!n)return;const on=!!(areaLink&&mats.includes(areaLink));n.textContent=on?(LANG==="es"?"Vinculado: la partida en la oferta se actualiza al cambiar estas medidas.":"Linked: the bid line updates as you change these numbers."):"";}
+$("aAdd").onclick=()=>{const a=areaCalc();const row=[a.name,a.qty,a.A,a.P];mats.push(row);areaLink=row;render();areaLinkNote();};
 $("addLab").onclick=()=>{labs.push(["",0,0]);render()};
 function crewLine(name,n,d,h,rate){return [`${name} (${n} people x ${d} days x ${h} h)`,n*d*h,rate]}
 $("cdAdd").onclick=()=>{labs.push(crewLine($("cdName").value.trim()||"Crew task",num($("cdPeople").value),num($("cdDays").value),num($("cdHours").value),num($("cdRate").value)));render();};

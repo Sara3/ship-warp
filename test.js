@@ -421,6 +421,23 @@ const startsWithMoney = (s, m) => s === m || s.startsWith(m + " ");
   eq(t2.txt("sTotal"), "$12,772.32", "page fine with corrupt crew storage");
 }
 
+{ // Area line stays linked to the helper (Kauri Ridge review)
+  const t = boot();
+  t.preset("blank");
+  t.set("aUnit", "m"); t.$("aUnit").dispatchEvent(new t.w.Event("change", { bubbles: true }));
+  t.set("aLen", "12"); t.set("aWid", "10"); t.set("aPrice", "68");
+  t.$("aAdd").click();
+  const rowsBefore = t.d.querySelectorAll("#matTable tbody tr").length;
+  let last = () => { const r = t.d.querySelectorAll("#matTable tbody tr"); return r[r.length - 1]; };
+  eq(last().querySelector('input[data-f="1"]').value, "120", "metric area qty 120 m2");
+  eq(last().querySelector('input[data-f="2"]').value, "m²", "unit m2");
+  t.set("aWid", "15");
+  eq(t.d.querySelectorAll("#matTable tbody tr").length, rowsBefore, "changing helper does not add a row");
+  eq(last().querySelector('input[data-f="1"]').value, "180", "linked line follows width change (12x15=180)");
+  ok(last().textContent.includes("12,240.00") || last().innerHTML.includes("12,240.00"), "linked line total follows (180 x 68 = 12,240)");
+  ok(/Linked/.test(t.txt("aLinkNote")), "linked note shown");
+}
+
 // @@NEXT@@
 
 console.log(`${failures ? "FAILED" : "PASSED"}: ${passes} passed, ${failures} failed`);
