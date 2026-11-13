@@ -100,6 +100,29 @@ const startsWithMoney = (s, m) => s === m || s.startsWith(m + " ");
   ok(startsWithMoney(t.txt("sMat"), "$8,596.00"), `materials include sq-ft line (got ${t.txt("sMat")})`);
 }
 
+// ---------- P1: AU GST quick toggle + labour spelling ----------
+{
+  const t = boot();
+  t.preset("electrical");
+  eq(t.$("cur").value, "AUD", "electrical preset defaults to AUD");
+  eq(t.$("gst").value, "10", "electrical preset defaults to GST 10%");
+  eq(t.$("auGst").getAttribute("aria-pressed"), "true", "AU toggle on for electrical");
+  ok(t.d.querySelector("#labTable").closest(".card").querySelector("h2").textContent === "Labour", "Labour heading in AUD");
+  ok(t.$("summary").textContent.includes("Labour"), "Labour in breakdown in AUD");
+  t.preset("solar");
+  eq(t.$("gst").value, "10", "solar preset defaults to GST 10%");
+  t.preset("landscape");
+  ok(t.$("summary").textContent.includes("Labor") && !t.$("summary").textContent.includes("Labour"), "Labor spelling in USD");
+  eq(t.$("auGst").getAttribute("aria-pressed"), "false", "AU toggle off for USD landscape");
+  t.$("auGst").click();
+  eq(t.$("cur").value, "AUD", "AU toggle switches to AUD");
+  eq(t.txt("sTotal"), "AUD $14,049.55", "AU toggle adds GST 10%");
+  eq(t.txt("totalLabel"), "Final total inc. GST", "AU toggle inc GST label");
+  t.$("auGst").click();
+  eq(t.txt("totalLabel"), "Bid total", "AU toggle off removes GST");
+  eq(t.txt("sTotal"), "AUD $12,772.32", "AU toggle off total");
+}
+
 // @@NEXT@@
 
 console.log(`${failures ? "FAILED" : "PASSED"}: ${passes} passed, ${failures} failed`);

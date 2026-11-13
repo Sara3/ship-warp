@@ -38,6 +38,8 @@
   .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
   .mute{color:var(--mute);font-size:13px}
   footer{text-align:center;padding:20px;color:var(--mute);font-size:13px}
+  .chip{padding:3px 10px;font-size:12px;border-radius:14px}
+  .chip[aria-pressed="true"]{background:var(--acc);color:#fff;border-color:var(--acc)}
   #marginWarn{font-size:13px;color:var(--warn);margin-top:6px}
 </style>
 </head>
@@ -85,9 +87,9 @@
   </div>
 
   <div class="card">
-    <h2>Labor</h2>
+    <h2 class="lw">Labor</h2>
     <table id="labTable"><thead><tr><th>Crew / task</th><th class="num">Hours</th><th class="num">Rate / hr</th><th class="num">Line total</th><th></th></tr></thead><tbody></tbody></table>
-    <div class="actions"><button id="addLab">+ Labor line</button></div>
+    <div class="actions"><button id="addLab">+ <span class="lw">Labor</span> line</button></div>
   </div>
 
   <div class="card">
@@ -116,13 +118,14 @@
   <div class="card sum" id="summary">
     <h2>Bid breakdown</h2>
     <div><span>Materials</span><span id="sMat"></span></div>
-    <div><span>Labor</span><span id="sLab"></span></div>
+    <div><span class="lw">Labor</span><span id="sLab"></span></div>
     <div><span>Direct cost</span><span id="sDirect"></span></div>
     <div><span>Contingency</span><span id="sCont"></span></div>
     <div><span>Markup</span><span id="sMark"></span></div>
     <div id="exRow"><span>Total ex GST</span><span id="sEx"></span></div>
     <div id="gstRow"><span id="gstLabel">GST</span><span id="sGst"></span></div>
     <div class="total"><span id="totalLabel">Bid total</span><span id="sTotal"></span></div>
+    <div style="border:none;padding:2px 0 6px;justify-content:flex-end;gap:6px"><button id="auGst" class="chip" aria-pressed="false" title="Australian GST: switch to AUD and add GST 10%">AU: GST 10%</button></div>
     <div class="profit"><span>Profit</span><span id="sProfit"></span></div>
     <div style="display:block;border:none"><span>Margin</span> <strong id="sMargin" style="float:right"></strong>
       <div class="bar"><i id="mBar"></i></div>
@@ -169,6 +172,7 @@ const $=id=>document.getElementById(id);
 let mats=[],labs=[];
 
 function fmt(n){const c=$("cur").value;return (c==="USD"?"$":c+" $")+n.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}
+function labWord(){return ["AUD","NZD"].includes($("cur").value)?"Labour":"Labor"}
 function num(v){const n=parseFloat(v);return isFinite(n)?n:0}
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
 
@@ -183,7 +187,7 @@ function render(){
     <td><button class="x" title="Remove line" data-del="m" data-i="${i}">&times;</button></td></tr>`).join("");
   const lb=$("labTable").querySelector("tbody");
   lb.innerHTML=labs.map((l,i)=>`<tr>
-    <td><input aria-label="Labor task" value="${esc(l[0])}" data-t="l" data-i="${i}" data-f="0"></td>
+    <td><input aria-label="Labour/labor task" value="${esc(l[0])}" data-t="l" data-i="${i}" data-f="0"></td>
     <td class="num"><input aria-label="Hours" type="number" step="any" style="width:80px" value="${l[1]}" data-t="l" data-i="${i}" data-f="1"></td>
     <td class="num"><input aria-label="Rate per hour" type="number" step="any" style="width:90px" value="${l[2]}" data-t="l" data-i="${i}" data-f="2"></td>
     <td class="num" id="lt${i}"></td>
@@ -219,6 +223,8 @@ function calc(){
   $("marginWarn").innerHTML=below?`<strong>BELOW YOUR ${floor}% FLOOR. Do not send.</strong> Raise markup to at least ${need.toFixed(1)}% to hit the floor.`:"";
   $("summary").style.outline=below?"3px solid var(--warn)":"none";$("summary").style.background=below?"#fbefe9":"";$("sMargin").style.color=below?"var(--warn)":"";
   $("cont").disabled=$("lockCont").value==="1";
+  const LW=labWord();document.querySelectorAll(".lw").forEach(e=>{if(e.textContent!==LW)e.textContent=LW});
+  $("auGst").setAttribute("aria-pressed",String(g===10&&$("cur").value==="AUD"));
   const aL=num($("aLen").value),aW=num($("aWid").value),aP=num($("aPrice").value),aA=aL*aW;
   $("aOut").textContent=`${aL} ft x ${aW} ft = ${aA.toLocaleString()} sq ft x ${fmt(aP)}/sq ft = ${fmt(aA*aP)}`;
   window.__bid={materials:mat,labor:lab,direct,contingency:cont,markup:mark,gst,total,profit,marginPct:margin,floorPct:floor,belowFloor:below};
@@ -247,6 +253,8 @@ document.addEventListener("click",e=>{
 $("addMat").onclick=()=>{mats.push(["",1,"ea",0]);render()};
 $("aAdd").onclick=()=>{const L=num($("aLen").value),W=num($("aWid").value);mats.push([`${$("aName").value} (${L}x${W} ft)`,L*W,"sq ft",num($("aPrice").value)]);render();};
 $("addLab").onclick=()=>{labs.push(["",0,0]);render()};
+$("auGst").onclick=()=>{const on=$("auGst").getAttribute("aria-pressed")==="true";
+  if(on){$("gst").value="0"}else{$("cur").value="AUD";$("gst").value="10"}calc();};
 
 function ruleCheck(){
   const scope=$("desc").value+" "+$("job").value;
@@ -280,7 +288,7 @@ $("copyBtn").onclick=()=>{
   const txt=[`BID: ${$("job").value} for ${$("client").value}`,
     ...mats.filter(m=>m[0]).map(m=>`  ${m[0]}: ${m[1]} ${m[2]} x ${fmt(num(m[3]))} = ${fmt(num(m[1])*num(m[3]))}`),
     ...labs.filter(l=>l[0]).map(l=>`  ${l[0]}: ${l[1]} hrs x ${fmt(num(l[2]))} = ${fmt(num(l[1])*num(l[2]))}`),
-    `Materials ${fmt(b.materials)} | Labor ${fmt(b.labor)} | Contingency ${fmt(b.contingency)} | Markup ${fmt(b.markup)}`+(b.gst?` | GST ${fmt(b.gst)}`:""),
+    `Materials ${fmt(b.materials)} | ${labWord()} ${fmt(b.labor)} | Contingency ${fmt(b.contingency)} | Markup ${fmt(b.markup)}`+(b.gst?` | GST ${fmt(b.gst)}`:""),
     `TOTAL ${fmt(b.total)} | Profit ${fmt(b.profit)} | Margin ${b.marginPct.toFixed(1)}%`].join("\n");
   (navigator.clipboard?navigator.clipboard.writeText(txt):Promise.reject()).then(()=>$("copied").textContent="Copied.").catch(()=>{$("copied").textContent="Copy failed; select and copy below.";$("copied").innerText=txt});
 };
