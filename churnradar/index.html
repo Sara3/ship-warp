@@ -115,6 +115,11 @@
     </div>
   </div>
 
+  <div class="card" id="renewalCard">
+    <h2 data-i18n="By renewal window">By renewal window</h2>
+    <div id="renewalList" class="grid" style="grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px"></div>
+  </div>
+
   <div class="card" id="escCard">
     <h2 data-i18n="Escalations">Escalations</h2>
     <div class="actions" style="margin-top:0">
@@ -226,6 +231,7 @@ const PT={
   "Add an account":"Adicionar uma conta","Account name":"Nome ou ID da conta","Owner (CS)":"Responsável (CS)","Notes / latest ticket (optional)":"Notas / último chamado (opcional)",
   "Add account":"Adicionar conta","Paste CSV":"Colar CSV","Import CSV":"Importar CSV",
   "csvLabel":"Uma conta por linha: nome, logins, chamados, dias, mensalidade, responsável, notas, dias de atraso (mensalidade, responsável, notas e dias de atraso opcionais; cabeçalho opcional)",
+  "By renewal window":"Por janela de renovação",
   "Revenue saved:":"Receita salva:","Revenue lost:":"Receita perdida:","Outcomes":"Resultados","Board summary":"Resumo para a diretoria","Copy board summary":"Copiar resumo",
   "outcomeHint":"Use \"Marcar como salva\" ou \"Marcar como perdida\" em uma conta em risco. Contas resolvidas saem da lista de risco e dos valores de receita em risco.",
   "e.g. Acme Corp":"ex.: Assinante #1042","e.g. Priya Shah":"ex.: Ana Souza","e.g. Asked how to export their data":"ex.: Perguntou como pausar a assinatura"
@@ -343,7 +349,7 @@ function refresh(){
   const totalRev=rev.Red+rev.Amber+rev.Green+oc.saved.v; // lost accounts no longer pay
   const fig=o=>`${usd(o.v)} ${T("/ month","/ mês")} (${o.n} ${T(pl(o.n,"account","accounts"),pl(o.n,"conta","contas"))})`;
   $("rSaved").textContent=fig(oc.saved);$("rLost").textContent=fig(oc.lost);
-  renderOutcomes();
+  renderOutcomes();renderWindows();
   $("boardOut").textContent=boardText(c,rev,oc);
   $("rRisk").textContent=usd(rev.Red);$("rAmber").textContent=usd(rev.Amber);$("rTotal").textContent=usd(totalRev);$("rOverdue").textContent=usd(owe);
   $("cRed").textContent=c.Red;$("cAmber").textContent=c.Amber;$("cGreen").textContent=c.Green;$("cTotal").textContent=c.Red+c.Amber+c.Green;
@@ -354,6 +360,15 @@ function refresh(){
   window.__churn={counts:c,outcomes:oc,revenue:{red:rev.Red,amber:rev.Amber,total:totalRev,overdue:owe},total:accounts.length,atRisk:list.map(x=>x.a.name)};
   save();
 }
+const WINDOWS=[["Next 30 days","Próximos 30 dias",-Infinity,30],["31-60 days","31-60 dias",31,60],["61-90 days","61-90 dias",61,90],["Later (91+)","Depois (91+)",91,Infinity]];
+const HORD={Red:0,Amber:1,Green:2};
+function renderWindows(){const open=accounts.filter(isOpen).map(a=>({a,s:score(a)}));
+  $("renewalList").innerHTML=WINDOWS.map(([en,pt,lo,hi],gi)=>{const L=open.filter(x=>x.s.D>=lo&&x.s.D<=hi)
+      .sort((x,y)=>HORD[x.s.health]-HORD[y.s.health]||x.s.D-y.s.D||String(x.a.name).localeCompare(String(y.a.name)));
+    const rev=L.reduce((t,x)=>t+bill(x.a.bill),0),n=L.length;
+    return `<div data-window="${gi}"><div class="rwh" style="font-weight:700;font-size:14px;border-bottom:1px solid var(--line);padding-bottom:4px;margin-bottom:4px">${esc(T(en,pt))} <span class="mute" style="font-weight:400">&middot; ${n} ${T(pl(n,"account","accounts"),pl(n,"conta","contas"))} &middot; ${esc(usd(rev))} ${T("/ month","/ mês")}</span></div>`+
+      (n?L.map(({a,s})=>`<div class="rw" data-rw="${esc(a.id)}" style="display:flex;justify-content:space-between;gap:6px;font-size:13px;padding:3px 0;border-bottom:1px dashed var(--line)"><span><span class="pill ${s.health}" style="font-size:11px;padding:1px 7px">${esc(HL(s.health))}</span> ${esc(a.name||T("(no name)","(sem nome)"))}</span><span class="mute" style="white-space:nowrap">${esc(renewText(s.D))} &middot; <strong style="color:var(--ink)">${esc(usd(bill(a.bill)))}</strong></span></div>`).join("")
+        :`<p class="mute" style="margin:4px 0">${T("None.","Nenhuma.")}</p>`)+`</div>`;}).join("");}
 function renderOutcomes(){const L=accounts.filter(a=>a.outcome).sort((x,y)=>y.outcome.at-x.outcome.at);
   $("outcomeList").innerHTML=L.length?L.map(a=>{const sv=a.outcome.kind==="saved";return `<div class="oc ${a.outcome.kind}" data-oc="${esc(a.id)}"><span class="outc ${a.outcome.kind}">${sv?T("Saved","Salva"):T("Lost","Perdida")}</span> <strong>${esc(a.name)}</strong> &middot; ${esc(usd(bill(a.bill)))} ${T("/ month","/ mês")}${a.owner?` &middot; ${T("owner","responsável")} ${esc(a.owner)}`:""} <span class="mute">&middot; ${esc(new Date(a.outcome.at).toLocaleDateString(LANG==="pt"?"pt-BR":"en-US"))}</span> <button class="sm" data-undooutcome="${esc(a.id)}">${T("Undo","Desfazer")}</button></div>`}).join("")
     :`<p class="mute">${T("No saved or lost accounts yet.","Nenhuma conta salva ou perdida ainda.")}</p>`;}

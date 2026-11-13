@@ -370,6 +370,26 @@ function boot({ fetch, seed, escSeed } = {}) {
     t.$("langEn").click();
   }
 
+  // ---------- Elimu Plus: by renewal window ----------
+  {
+    const t = boot({ seed: "[]" });
+    t.$("sampleBtn").click();
+    const grp = i => t.d.querySelector(`#renewalList [data-window="${i}"]`);
+    const rowsIn = i => [...grp(i).querySelectorAll("[data-rw]")].map(r => r.textContent.replace(/\s+/g, " ").trim());
+    ok(grp(0).querySelector(".rwh").textContent.includes("Next 30 days") && grp(0).querySelector(".rwh").textContent.includes("4 accounts") && grp(0).querySelector(".rwh").textContent.includes("$15,400 / month"), "next 30 days header count + revenue");
+    eq(JSON.stringify(rowsIn(0).map(x => x.split("renews")[0].trim())), JSON.stringify(["Red Meridian Freight", "Red Northwind Dental Group", "Amber Kestrel Analytics", "Amber Sable Peak Outfitters"]), "red first, then amber, then days ascending");
+    ok(rowsIn(0)[0].includes("renews in 14 days") && rowsIn(0)[0].includes("$6,900"), "row shows days to renewal and bill");
+    ok(grp(1).textContent.includes("31-60 days") && grp(1).textContent.includes("2 accounts") && grp(1).textContent.includes("$5,550"), "31-60 group");
+    ok(grp(2).textContent.includes("61-90 days") && grp(2).textContent.includes("1 account ") && grp(2).textContent.includes("$5,200"), "61-90 group");
+    ok(grp(3).textContent.includes("Later (91+)") && grp(3).textContent.includes("3 accounts") && grp(3).textContent.includes("$2,980"), "91+ group");
+    eq(rowsIn(3).length, 3, "green accounts included too");
+    t.d.querySelector(`#atRisk [data-oid="${t.row("Meridian Freight").dataset.row}"][data-outcome="lost"]`).click();
+    ok(grp(0).textContent.includes("3 accounts") && !grp(0).textContent.includes("Meridian"), "resolved accounts leave the renewal windows");
+    t.$("langPt").click();
+    ok(t.txt("renewalCard").includes("Por janela de renovação") && t.txt("renewalCard").includes("Próximos 30 dias") && t.txt("renewalCard").includes("Depois (91+)"), "PT renewal window labels");
+    t.$("langEn").click();
+  }
+
   console.log(`${failures ? "FAILED" : "PASSED"}: ${passes} passed, ${failures} failed (churn)`);
   process.exit(failures ? 1 : 0);
 })();
