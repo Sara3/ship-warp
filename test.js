@@ -313,6 +313,28 @@ const startsWithMoney = (s, m) => s === m || s.startsWith(m + " ");
   eq(t.txt("totalLabel"), "Total con IVA", "IVA total label in Spanish");
 }
 
+// ---------- P2: client-ready bid ----------
+{
+  const t = boot();
+  t.preset("landscape");
+  t.$("clientBtn").click();
+  ok(t.shown("clientOut"), "client bid preview shown");
+  const c = t.txt("clientOut");
+  ok(c.includes("TOTAL: $12,772.32"), "client bid total matches");
+  ok(c.includes("Backyard paver patio"), "client bid has job");
+  ok(!/markup|contingency|profit|margin/i.test(c), "client bid hides markup/contingency/profit/margin");
+  ok(!c.includes("$4.50"), "client bid hides unit costs");
+  const sum = [...c.matchAll(/^  .*\s(\$[\d,]+\.\d\d)$/gm)].reduce((a, m) => a + parseFloat(m[1].replace(/[$,]/g, "")), 0);
+  ok(Math.abs(sum - 12772.32) < 0.001, `client line prices sum to total (got ${sum.toFixed(2)})`);
+  t.set("gst", "10"); t.$("clientBtn").click();
+  const g = t.txt("clientOut");
+  ok(g.includes("Total ex GST: $12,772.32") && g.includes("GST 10%: $1,277.23") && g.includes("Final total inc. GST: $14,049.55"), "client bid GST lines");
+  t.preset("telecom"); t.$("clientBtn").click();
+  const tc = t.txt("clientOut");
+  ok(tc.includes("$22,750.00 /mo") && tc.includes("$854,000.00"), "client bid includes recurring + contract value");
+  ok(!tc.includes("TOTAL: $0.00"), "telecom client bid has no empty project total");
+}
+
 // @@NEXT@@
 
 console.log(`${failures ? "FAILED" : "PASSED"}: ${passes} passed, ${failures} failed`);
