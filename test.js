@@ -33,7 +33,10 @@ const startsWithMoney = (s, m) => s === m || s.startsWith(m + " ");
 {
   const script = SRC.split("<script>").slice(1).join("");
   ok(!/\b(alert|confirm|prompt)\s*\(/.test(script), "no alert/confirm/prompt calls");
-  ok(!/\bfetch\s*\(|XMLHttpRequest|<script[^>]+src=|<link[^>]+href=["']https?:/i.test(SRC), "no external network calls");
+  ok(!/XMLHttpRequest|<script[^>]+src=|<link[^>]+href=["']https?:/i.test(SRC), "no external scripts, styles or XHR");
+  const fetchTargets = [...SRC.matchAll(/\bfetch\s*\(\s*([^,)]+)/g)].map(m => m[1].trim());
+  ok(fetchTargets.length > 0 && fetchTargets.every(t => t === "AI_URL"), `fetch only calls AI_URL (got ${fetchTargets.join(", ") || "none"})`);
+  ok(/const AI_URL="https:\/\/bidbench\.pubandsubs\.workers\.dev\/api\/review"/.test(SRC), "AI_URL points at the BidBench AI worker");
   const ls = (script.match(/localStorage/g) || []).length;
   script.split("\n").filter(l => l.includes("localStorage")).forEach(l => ok(/try\s*{/.test(l), "localStorage access wrapped in try: " + l.trim().slice(0, 60)));
 }

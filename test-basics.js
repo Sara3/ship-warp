@@ -1,15 +1,20 @@
-// Basics regression test: the checks every buyer re-runs. Run: node test-basics.js (after `npm i`).
+// Basics regression test: the checks every buyer re-runs, plus the AI review wiring.
+// Run: node test-basics.js (after `npm i`).
 const fs = require("fs");
 const path = require("path");
 const { JSDOM } = require("jsdom");
 
 const SRC = fs.readFileSync(path.join(__dirname, "index.html"), "utf8");
+const AI_URL = "https://bidbench.pubandsubs.workers.dev/api/review";
 let failures = 0, passes = 0;
 const ok = (cond, msg) => { if (cond) { passes++; } else { failures++; console.error("FAIL: " + msg); } };
 const eq = (a, b, msg) => ok(a === b, `${msg}: expected ${JSON.stringify(b)}, got ${JSON.stringify(a)}`);
 
-function boot() {
-  const dom = new JSDOM(SRC, { runScripts: "dangerously", url: "http://localhost/", pretendToBeVisual: true });
+function boot(fetchImpl) {
+  const dom = new JSDOM(SRC, {
+    runScripts: "dangerously", url: "http://localhost/", pretendToBeVisual: true,
+    beforeParse(window) { if (fetchImpl) window.fetch = fetchImpl; },
+  });
   const w = dom.window, d = w.document, $ = (id) => d.getElementById(id);
   const fire = (el, type) => el.dispatchEvent(new w.Event(type, { bubbles: true }));
   const set = (el, v) => { const node = typeof el === "string" ? $(el) : el; node.value = v; fire(node, "input"); fire(node, "change"); };
@@ -61,5 +66,35 @@ function boot() {
   eq(t.$("cont").disabled, false, "unlocking makes it editable again");
 }
 
-console.log(`${failures ? "FAILED" : "PASSED"}: ${passes} passed, ${failures} failed`);
-process.exit(failures ? 1 : 0);
+async function aiTests() {
+  { // AI suggestions are shown and can be added as lines
+    const calls = [];
+    const t = boot(async (url, opts) => {
+      calls.push({ url, body: JSON.parse(opts.body) });
+      return { ok: true, status: 200, json: async () => ({ ok: true, data: { missing: ["Permit fees"] }, error: null }) };
+    });
+    await t.$("checkBtn").onclick();
+    eq(calls.length, 1, "check calls the AI once");
+    eq(calls[0] && calls[0].url, AI_URL, "AI worker URL");
+    ok(calls[0] && calls[0].body.scope.includes("paver patio"), "scope notes are sent to the AI");
+    ok(calls[0] && calls[0].body.lines.includes("Pavers"), "bid lines are sent to the AI");
+    const aiFlag = [...t.d.querySelectorAll("#flags .flag")].find((f) => f.textContent.includes("Permit fees"));
+    ok(!!aiFlag, "AI suggestion is shown");
+    const before = t.d.querySelectorAll("#matTable tbody tr").length;
+    if (aiFlag) aiFlag.querySelector("button").click();
+    eq(t.d.querySelectorAll("#matTable tbody tr").length, before + 1, "Add line adds the AI suggestion as a material line");
+  }
+  { // AI down: keyword checks still show, with a visible note
+    const t = boot(async () => { throw new TypeError("Failed to fetch"); });
+    await t.$("checkBtn").onclick();
+    ok(t.txt("flags").includes("AI review unavailable"), "AI failure is explained, not hidden");
+    ok(t.d.querySelectorAll("#flags .flag").length > 0, "keyword checks still show when the AI is down");
+  }
+}
+
+aiTests()
+  .catch((err) => { failures++; console.error("FAIL: AI tests threw", err); })
+  .finally(() => {
+    console.log(`${failures ? "FAILED" : "PASSED"}: ${passes} passed, ${failures} failed`);
+    process.exit(failures ? 1 : 0);
+  });
