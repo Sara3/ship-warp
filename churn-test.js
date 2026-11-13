@@ -252,7 +252,7 @@ function boot({ fetch, seed, escSeed } = {}) {
   const names = t => [...t.d.querySelectorAll("#atRisk [data-risk]")].map(e => e.querySelector("strong").textContent.replace(/^\d+\.\s*/, ""));
   {
     const t = boot({ seed: "[]" });
-    const EN_LABELS = ["Monthly revenue at risk", "At-risk accounts (Red and Amber, worst first)", "How the score works", "Load sample accounts", "Accounts", "Total accounts", "Escalations", "Check all tickets for cancellation intent", "Paste CSV", "Import CSV", "Add account", "Revenue with overdue payments:", "Overdue payments are flagged separately and do not change the score.", "Your data stays in this browser. No CPF, phone or email fields are needed: use any account name or ID."];
+    const EN_LABELS = ["Monthly revenue at risk", "At-risk accounts (Red and Amber, worst first)", "How the score works", "Load sample accounts", "Accounts", "Total accounts", "Escalations", "Check all tickets for cancellation intent", "Paste CSV", "Import CSV", "Add account", "Revenue with overdue payments:", "Override: if the last payment failed (1+ days overdue), the account is Red regardless of points.", "Last payment failed / days overdue", "Your data stays in this browser. No CPF, phone or email fields are needed: use any account name or ID."];
     const main = () => t.d.querySelector("main").textContent;
     EN_LABELS.forEach(l => ok(main().includes(l), `EN label "${l}"`));
     eq(t.$("langEn").getAttribute("aria-pressed"), "true", "English is default");
@@ -263,15 +263,20 @@ function boot({ fetch, seed, escSeed } = {}) {
     eq(names(t)[0], "Harbor & Pine Realty", "overdue Green account pinned at top");
     ok(t.d.querySelector("#atRisk [data-risk]").textContent.includes("Payment overdue 3 days (boleto/Pix)"), "orange overdue badge text");
     ok(!!t.d.querySelector("#atRisk .owe"), "overdue badge uses the orange style");
-    eq(t.health("Harbor & Pine Realty"), "Green", "overdue does not change R/A/G");
+    eq(t.health("Harbor & Pine Realty"), "Red", "last payment failed forces Red regardless of points");
+    eq(t.bd("Harbor & Pine Realty"), "logins 0 + tickets 0 + renewal 0 = 0 → Green, but last payment failed (3 days) → Red", "breakdown explains the override");
+    ok(t.d.querySelector("#atRisk [data-risk]").textContent.includes("last payment failed (3 days overdue)"), "at-risk reason mentions the failed payment");
     eq(t.txt("rOverdue"), "$1,200", "revenue with overdue payments");
-    eq(t.txt("rRisk"), "$16,900", "revenue at risk unchanged by overdue");
+    eq(t.txt("rRisk"), "$18,100", "failed-payment account counts in revenue at risk");
+    eq(t.txt("cRed"), "4", "red count includes the override");
     t.set(t.row("Harbor & Pine Realty").querySelector('[data-k="overdue"]'), "0");
     ok(!names(t).includes("Harbor & Pine Realty"), "clearing overdue unpins");
     eq(t.txt("rOverdue"), "$0", "overdue revenue back to 0");
+    eq(t.health("Harbor & Pine Realty"), "Green", "empty/0 overdue behaves exactly as before");
+    eq(t.txt("rRisk"), "$16,900", "revenue at risk back once payment fixed");
     // Português
     t.$("langPt").click();
-    const PT_LABELS = ["Receita mensal em risco", "Contas em risco", "Assinantes", "Carregar contas de exemplo", "Como a pontuação funciona", "Vermelho", "Amarelo", "Verde", "Escalonamentos", "Seus dados ficam neste navegador. Não é preciso CPF, telefone nem e-mail", "Pagamentos vencidos são sinalizados à parte e não mudam a pontuação.", "Importar CSV", "Receita com pagamentos vencidos:"];
+    const PT_LABELS = ["Receita mensal em risco", "Contas em risco", "Assinantes", "Carregar contas de exemplo", "Como a pontuação funciona", "Vermelho", "Amarelo", "Verde", "Escalonamentos", "Seus dados ficam neste navegador. Não é preciso CPF, telefone nem e-mail", "Exceção: se o último pagamento falhou (1+ dia em atraso), o assinante fica Vermelho, independentemente dos pontos.", "Último pagamento falhou / dias em atraso", "Importar CSV", "Receita com pagamentos vencidos:"];
     PT_LABELS.forEach(l => ok(main().includes(l), `PT label "${l}"`));
     eq(t.txt("rRisk"), "R$ 16.900", "R$ in Português");
     ok(t.bd("Northwind Dental Group").includes("chamados 2 + renovação 2 = 6 → Vermelho"), `PT breakdown (got ${t.bd("Northwind Dental Group")})`);
@@ -298,7 +303,7 @@ function boot({ fetch, seed, escSeed } = {}) {
     eq(t.rows().filter(r => +r.querySelector('[data-k="overdue"]').value > 0).length, 3, "3 subscribers with overdue boleto/Pix");
     ok(t.rows().every(r => { const b = +r.querySelector('[data-k="bill"]').value; return b >= 89 && b <= 249; }), "bills between R$ 89 and R$ 249");
     eq(t.txt("rOverdue"), "R$ 477", "overdue revenue on Brazil samples");
-    eq(t.txt("rRisk"), "R$ 796", "revenue at risk on Brazil samples");
+    eq(t.txt("rRisk"), "R$ 885", "revenue at risk on Brazil samples includes failed payments");
     eq(t.txt("rTotal"), "R$ 1.560", "total on Brazil samples");
     eq(JSON.stringify(names(t)), JSON.stringify(["Assinante #1236", "Assinante #1103", "Assinante #1129", "Assinante #1042", "Assinante #1188", "Assinante #1257", "Assinante #1150"]), "overdue pinned first (worst first among them), then normal order");
     ok(t.d.querySelector("#atRisk [data-risk]").textContent.includes("Pagamento vencido há 3 dias (boleto/Pix)"), "PT overdue badge");
@@ -312,7 +317,8 @@ function boot({ fetch, seed, escSeed } = {}) {
     ok(/Leitura de chamados por IA desligada/.test(t.row("Assinante #1188").textContent) && /leitura por palavras-chave: risco de cancelamento/.test(t.row("Assinante #1188").textContent), "AI off uses labelled keyword read");
     eq(JSON.stringify(names(t).slice(0, 4)), JSON.stringify(["Assinante #1042", "Assinante #1236", "Assinante #1103", "Assinante #1129"]), "cancellation warning pinned above overdue");
     ok(t.d.querySelector("#atRisk [data-risk]").textContent.includes("Aviso de cancelamento → escalar para Ana Souza"), "PT cancellation badge");
-    eq(t.health("Assinante #1129"), "Verde", "R/A/G unchanged");
+    eq(t.health("Assinante #1129"), "Vermelho", "failed payment forces Vermelho");
+    ok(t.bd("Assinante #1129").includes("→ Verde, mas o último pagamento falhou (5 dias) → Vermelho"), `PT override breakdown (got ${t.bd("Assinante #1129")})`);
     // persisted off; turning on makes the call again
     eq(t.w.localStorage.getItem("churnradar.aiOn.v1"), "0", "AI off remembered");
     t.$("aiToggle").click();

@@ -111,7 +111,7 @@
         <tr><td data-i18n="Days to renewal">Days to renewal</td><td data-i18n="0-30 (or overdue)">0-30 (or overdue)</td><td>31-90</td><td data-i18n="91 or more">91 or more</td></tr>
       </table>
       <p class="mute" data-i18n="aiNote">The "AI read" column is advice from the account notes only. It never changes the Red / Amber / Green score.</p>
-      <p style="margin-bottom:0;font-size:14px" id="overdueNote"><span class="owe">boleto/Pix</span> <span data-i18n="Overdue payments are flagged separately and do not change the score.">Overdue payments are flagged separately and do not change the score.</span> <span class="mute" data-i18n="overdueNote2">Any account 1 or more days overdue is pinned near the top of the at-risk list.</span></p>
+      <p style="margin-bottom:0;font-size:14px" id="overdueNote"><span class="owe">boleto/Pix</span> <strong data-i18n="overrideRule">Override: if the last payment failed (1+ days overdue), the account is Red regardless of points.</strong> <span class="mute" data-i18n="overdueNote2">It is also pinned near the top of the at-risk list, right after cancellation warnings.</span></p>
     </div>
   </div>
 
@@ -153,7 +153,7 @@
     <p class="privacy" id="privacyNote" data-i18n="privacy">Your data stays in this browser. No CPF, phone or email fields are needed: use any account name or ID.</p>
     <div style="margin-top:12px">
       <table id="accTable">
-        <thead><tr><th data-i18n="Account">Account</th><th class="num" data-i18n="Logins (30 days)">Logins (30 days)</th><th class="num" data-i18n="Open tickets">Open tickets</th><th class="num" data-i18n="Days to renewal">Days to renewal</th><th class="num" data-i18n="Monthly bill ($)">Monthly bill ($)</th><th class="num" data-i18n="Days payment overdue">Days payment overdue</th><th data-i18n="Owner">Owner</th><th data-i18n="Health">Health</th><th data-i18n="Points">Points</th><th data-i18n="Notes / latest ticket">Notes / latest ticket</th><th data-i18n="AI signal">AI signal</th><th></th></tr></thead>
+        <thead><tr><th data-i18n="Account">Account</th><th class="num" data-i18n="Logins (30 days)">Logins (30 days)</th><th class="num" data-i18n="Open tickets">Open tickets</th><th class="num" data-i18n="Days to renewal">Days to renewal</th><th class="num" data-i18n="Monthly bill ($)">Monthly bill ($)</th><th class="num" data-i18n="Last payment failed / days overdue">Last payment failed / days overdue</th><th data-i18n="Owner">Owner</th><th data-i18n="Health">Health</th><th data-i18n="Points">Points</th><th data-i18n="Notes / latest ticket">Notes / latest ticket</th><th data-i18n="AI signal">AI signal</th><th></th></tr></thead>
         <tbody></tbody>
       </table>
       <p class="mute" id="emptyMsg" data-i18n="No accounts yet. Add one below, paste a CSV, or load the sample accounts.">No accounts yet. Add one below, paste a CSV, or load the sample accounts.</p>
@@ -171,7 +171,7 @@
       </div>
       <div class="row4" style="margin-top:10px;grid-template-columns:1fr 1fr 1fr"><div><label for="aBill" data-i18n="Monthly bill ($)">Monthly bill ($)</label><input id="aBill" type="number" min="0" step="any" placeholder="0"></div>
         <div><label for="aOwner" data-i18n="Owner (CS)">Owner (CS)</label><input id="aOwner" placeholder="e.g. Priya Shah" data-i18n-ph="e.g. Priya Shah"></div>
-        <div><label for="aOverdue" data-i18n="Days payment overdue">Days payment overdue</label><input id="aOverdue" type="number" min="0" step="1" placeholder="0"></div></div>
+        <div><label for="aOverdue" data-i18n="Last payment failed / days overdue">Last payment failed / days overdue</label><input id="aOverdue" type="number" min="0" step="1" placeholder="0"></div></div>
       <div style="margin-top:10px"><label for="aNotes" data-i18n="Notes / latest ticket (optional)">Notes / latest ticket (optional)</label><input id="aNotes" placeholder="e.g. Asked how to export their data" data-i18n-ph="e.g. Asked how to export their data"></div>
       <div class="actions"><button class="primary" id="addBtn" data-i18n="Add account">Add account</button><span class="mute" id="addMsg" role="status"></span></div>
     </div>
@@ -213,14 +213,14 @@ const PT={
   "Logins in the last 30 days":"Logins nos últimos 30 dias","Open support tickets":"Chamados de suporte abertos","Days to renewal":"Dias até a renovação",
   "15 or more":"15 ou mais","5 or more":"5 ou mais","0-30 (or overdue)":"0-30 (ou vencida)","91 or more":"91 ou mais",
   "aiNote":"A coluna \"Leitura IA\" é só uma sugestão a partir das notas da conta. Ela nunca muda a nota Vermelho / Amarelo / Verde.",
-  "Overdue payments are flagged separately and do not change the score.":"Pagamentos vencidos são sinalizados à parte e não mudam a pontuação.",
-  "overdueNote2":"Toda conta com 1 dia ou mais de atraso fica fixada no topo da lista de contas em risco.",
+  "overrideRule":"Exceção: se o último pagamento falhou (1+ dia em atraso), o assinante fica Vermelho, independentemente dos pontos.",
+  "overdueNote2":"Ele também fica fixado no topo da lista de contas em risco, logo depois dos avisos de cancelamento.",
   "Escalations":"Escalonamentos","Turn red after (minutes)":"Ficar vermelho após (minutos)",
   "escHint":"Um aviso de cancelamento abre um escalonamento automaticamente. Use \"Escalar\" em qualquer conta em risco para abrir um manualmente.",
   "Acknowledged":"Confirmados","Accounts":"Assinantes","Load sample accounts":"Carregar contas de exemplo","Load sample subscribers (Brasil)":"Carregar assinantes de exemplo (Brasil)",
   "Check all tickets for cancellation intent":"Verificar intenção de cancelamento em todos os chamados","Clear all":"Limpar tudo",
   "privacy":"Seus dados ficam neste navegador. Não é preciso CPF, telefone nem e-mail: use qualquer nome ou ID de conta.",
-  "Account":"Conta","Logins (30 days)":"Logins (30 dias)","Open tickets":"Chamados abertos","Monthly bill ($)":"Mensalidade (R$)","Days payment overdue":"Dias de pagamento vencido",
+  "Account":"Conta","Logins (30 days)":"Logins (30 dias)","Open tickets":"Chamados abertos","Monthly bill ($)":"Mensalidade (R$)","Last payment failed / days overdue":"Último pagamento falhou / dias em atraso",
   "Owner":"Responsável","Health":"Saúde","Points":"Pontos","Notes / latest ticket":"Notas / último chamado","AI signal":"Sinal da IA",
   "No accounts yet. Add one below, paste a CSV, or load the sample accounts.":"Nenhuma conta ainda. Adicione uma abaixo, cole um CSV ou carregue as contas de exemplo.",
   "Add an account":"Adicionar uma conta","Account name":"Nome ou ID da conta","Owner (CS)":"Responsável (CS)","Notes / latest ticket (optional)":"Notas / último chamado (opcional)",
@@ -247,15 +247,20 @@ function loginPts(n){return n<=4?2:n<=14?1:0}
 function ticketPts(n){return n>=5?2:n>=2?1:0}
 function renewalPts(d){return d<=30?2:d<=90?1:0}
 function health(p){return p>=4?"Red":p>=2?"Amber":"Green"}
-function score(a){const L=cnt(a.logins),T_=cnt(a.tickets),D=Math.floor(num(a.days));
-  const l=loginPts(L),t=ticketPts(T_),r=renewalPts(D),total=l+t+r,h=health(total);
-  return {l,t,r,total,health:h,L,T:T_,D,breakdown:T(`logins ${l} + tickets ${t} + renewal ${r} = ${total} → ${h}`,`logins ${l} + chamados ${t} + renovação ${r} = ${total} → ${HL(h)}`)};}
+function score(a){const L=cnt(a.logins),T_=cnt(a.tickets),D=Math.floor(num(a.days)),od=cnt(a.overdue);
+  const l=loginPts(L),t=ticketPts(T_),r=renewalPts(D),total=l+t+r,h0=health(total);
+  // Override: last payment failed (1+ days overdue) -> Red regardless of points. Empty/0 = rule exactly as before.
+  const h=od>=1?"Red":h0;
+  let bd=T(`logins ${l} + tickets ${t} + renewal ${r} = ${total} → ${h0}`,`logins ${l} + chamados ${t} + renovação ${r} = ${total} → ${HL(h0)}`);
+  if(od>=1)bd+=T(`, but last payment failed (${od} day${od===1?"":"s"}) → Red`,`, mas o último pagamento falhou (${od} dia${od===1?"":"s"}) → Vermelho`);
+  return {l,t,r,total,health:h,od,L,T:T_,D,breakdown:bd};}
 const pl=(n,one,many)=>n===1?one:many;
 function renewText(d){return d<0?T(`renewal ${-d} day${pl(-d,"","s")} overdue`,`renovação vencida há ${-d} dia${pl(-d,"","s")}`):d===0?T("renews today","renova hoje"):T(`renews in ${d} day${pl(d,"","s")}`,`renova em ${d} dia${pl(d,"","s")}`)}
 function reason(s){const out=[];
   if(s.l)out.push(T(`only ${s.L} login${pl(s.L,"","s")} in 30 days`,`apenas ${s.L} login${pl(s.L,"","s")} em 30 dias`));
   if(s.t)out.push(T(`${s.T} open ticket${pl(s.T,"","s")}`,`${s.T} chamado${pl(s.T,"","s")} aberto${pl(s.T,"","s")}`));
   if(s.r)out.push(renewText(s.D));
+  if(s.od)out.unshift(T(`last payment failed (${s.od} day${s.od===1?"":"s"} overdue)`,`último pagamento falhou (${s.od} dia${s.od===1?"":"s"} em atraso)`));
   return out.join(", ");}
 function rank(a){return a.cancel?2:cnt(a.overdue)>0?1:0}
 function atRiskList(){return accounts.filter(isOpen).map(a=>({a,s:score(a)})).filter(x=>x.s.health!=="Green"||rank(x.a))
@@ -321,7 +326,7 @@ function render(){
     <td class="num"><input aria-label="Open tickets" type="number" min="0" step="1" value="${esc(a.tickets)}" data-id="${esc(a.id)}" data-k="tickets"></td>
     <td class="num"><input aria-label="Days to renewal" type="number" step="1" value="${esc(a.days)}" data-id="${esc(a.id)}" data-k="days"></td>
     <td class="num"><input aria-label="Monthly bill" type="number" min="0" step="any" value="${esc(a.bill)}" data-id="${esc(a.id)}" data-k="bill" style="width:100px"></td>
-    <td class="num"><input aria-label="Days payment overdue" type="number" min="0" step="1" value="${cnt(a.overdue)?esc(cnt(a.overdue)):""}" placeholder="0" data-id="${esc(a.id)}" data-k="overdue" style="width:70px"></td>
+    <td class="num"><input aria-label="Last payment failed / days overdue" type="number" min="0" step="1" value="${cnt(a.overdue)?esc(cnt(a.overdue)):""}" placeholder="0" data-id="${esc(a.id)}" data-k="overdue" style="width:70px"></td>
     <td><input aria-label="Account owner" value="${esc(a.owner)}" placeholder="${esc(T("CS owner","Responsável"))}" data-id="${esc(a.id)}" data-k="owner" style="min-width:110px"></td>
     <td data-cell="health">${r.pill}</td>
     <td class="bd" data-cell="bd">${r.bd}</td>
