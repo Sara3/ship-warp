@@ -72,6 +72,7 @@
       <button data-preset="landscape" data-i18n="Landscape / hardscape">Landscape / hardscape</button>
       <button data-preset="electrical" data-i18n="Electrical fit-out">Electrical fit-out</button>
       <button data-preset="solar" data-i18n="Solar + battery">Solar + battery</button>
+      <button data-preset="reroofnz">Re-roof (NZ)</button>
       <button data-preset="hvacmx">HVAC industrial (MX)</button>
       <button data-preset="telecom" data-i18n="Enterprise telecom quote">Enterprise telecom quote</button>
       <button data-preset="blank" data-i18n="Blank">Blank</button>
@@ -97,6 +98,11 @@
         <div><label for="aLen" data-i18n="Length (ft)">Length (ft)</label><input id="aLen" type="number" step="any" value="20"></div>
         <div><label for="aWid" data-i18n="Width (ft)">Width (ft)</label><input id="aWid" type="number" step="any" value="20"></div>
         <div><label for="aPrice" data-i18n="Price / sq ft">Price / sq ft</label><input id="aPrice" type="number" step="any" value="12"></div>
+      </div>
+      <div class="row" style="grid-template-columns:1fr 1fr 1fr 2fr;margin-top:6px">
+        <div><label for="aUnit" data-i18n="Units">Units</label><select id="aUnit"><option value="ft">ft (sq ft)</option><option value="m">m (m²)</option></select></div>
+        <div><label for="aPitch" data-i18n="Roof pitch (degrees)">Roof pitch (degrees)</label><input id="aPitch" type="number" min="0" max="80" step="any" value="0"></div>
+        <div><label for="aWaste" data-i18n="Waste %">Waste %</label><input id="aWaste" type="number" min="0" step="any" value="0"></div>
       </div>
       <p class="mute" id="aOut" style="margin:8px 0"></p>
       <button class="primary" id="aAdd" data-i18n="Add to bid">Add to bid</button>
@@ -221,6 +227,10 @@ const PRESETS={
   telecom:{job:"Enterprise fiber + managed routers, 50 sites",client:"Enterprise (bank)",desc:"50-site business fiber 1Gbps with managed router per site, 36-month term. One-time installation per site plus site survey.",
     mats:[],labs:[],markup:20,cont:10,cur:"USD",gst:"0",term:36,
     rcs:[["Business fiber 1Gbps",50,420],["Managed router",50,35]],ots:[["Installation",50,650],["Site survey",1,2500]]},
+  reroofnz:{job:"Re-roof, 12 x 10 m house (Auckland)",client:"Homeowner",desc:"Re-roof 12 x 10 m house, 25 degree pitch: strip old corrugated iron, new synthetic underlay, long-run Colorsteel roofing, flashings, skip bin for old roof.",
+    mats:[["Long-run iron roofing (Colorsteel), 25° pitch +10% waste",145.65,"m²",68],["Flashings + ridging",1,"lot",1450],["Roof underlay (synthetic)",145.65,"m²",6.5],["Scaffolding hire",3,"week",950],["Skip bin disposal (old roof)",2,"ea",480]],
+    labs:[["Roofer (lead)",48,85],["Roofer",48,65],["Labourer (strip + clean)",24,45]],markup:18,cont:8,cur:"NZD",gst:"15",
+    area:{name:"Long-run iron roofing (installed)",unit:"m",len:12,wid:10,price:68,pitch:25,waste:10}},
   blank:{client:"",job:"",desc:"",mats:[["",1,"ea",0]],labs:[["",0,0]],markup:20,cont:10,cur:"USD",gst:"0"}
 };
 const RULES=[
@@ -235,12 +245,15 @@ const RULES=[
   {k:"icra",t:"Infection control (ICRA) barriers for healthcare work",match:/icra|infection|dust barrier|negative air/i,when:/clinic|healthcare|hospital|medical|occupied/i,add:["ICRA dust barriers + negative air",1,"lot",3200]},
   {k:"crane",t:"Crane / hoist rental to lift rooftop equipment (grua)",match:/crane|hoist|gr[uú]a|polipasto/i,when:/roof-?top\s*(units?|equip|hvac|rtu|ac\b)|techo|azotea|\brtus?\b|hvac|unidades|\b(ac|condensing|package[d]?)\s+units?\b/i,add:["Crane / hoist rental (rooftop lift)",1,"day",2500]},
   {k:"startup",t:"Startup / commissioning (arranque)",match:/start-?up|commission|arranque|puesta en marcha/i,when:/hvac|roof-?top\s*units?|\brtus?\b|chiller|techo|clima|aire acondicionado|duct|condens/i,addLab:["Startup / commissioning (arranque)",16,95]},
+  {k:"scaffold",t:"Scaffolding / edge protection (working at height)",match:/scaffold|edge protection|height safety|guard ?rail/i,when:/re-?roof|roofing|\broof\b|rooftop/i,add:["Scaffolding / edge protection hire",1,"lot",1800]},
+  {k:"flashing",t:"Flashings, ridging and barge (roofing)",match:/flashing|ridg|barge/i,when:/re-?roof|roofing|long-?run|corrugated|roof iron/i,add:["Flashings + ridging",1,"lot",1200]},
   {k:"cleanup",t:"Site cleanup / restoration",match:/clean|restor|make good|sod repair/i,when:/./,addLab:["Site cleanup / make good",4,55]},
   {k:"travel",t:"Travel / mobilization",match:/travel|mobili|call-?out/i,when:/./,addLab:["Travel / mobilization",2,60]}
 ];
 const $=id=>document.getElementById(id);
 const ES={"% of direct cost": "% del costo directo", "% of cost + contingency": "% del costo + contingencia", "Itemized contractor bids. See your margin before it goes out the door.": "Presupuestos detallados para contratistas. Vea su margen antes de enviarlo.", "Job": "Obra", "Job name": "Nombre de la obra", "Client": "Cliente", "Scope notes (in your own words)": "Alcance (en sus palabras)", "Start from:": "Empezar con:", "Commercial fit-out": "Acondicionamiento comercial", "Landscape / hardscape": "Paisajismo", "Electrical fit-out": "Instalación eléctrica", "Solar + battery": "Solar + batería", "Enterprise telecom quote": "Cotización telecom empresarial", "Blank": "En blanco", "Save bid": "Guardar", "Duplicate": "Duplicar", "Load": "Abrir", "Delete": "Eliminar", "Bids are saved in this browser only.": "Los presupuestos se guardan solo en este navegador.", "Materials": "Materiales", "Item": "Concepto", "Qty": "Cant.", "Unit": "Unidad", "Unit cost": "Costo unitario", "Markup %": "Margen de ganancia %", "Line total": "Importe", "+ Material line": "+ Agregar partida", "Square-footage line": "Partida por pie cuadrado", "Length (ft)": "Largo (pies)", "Width (ft)": "Ancho (pies)", "Price / sq ft": "Precio / pie²", "Add to bid": "Agregar al presupuesto", "Crew / task": "Cuadrilla / tarea", "Hours": "Horas", "Rate / hr": "Tarifa / hora", "Crew-days line": "Cuadrilla: personas x días x horas", "(people x days x hours/day, instead of a lump pool of hours)": "(en lugar de una bolsa de horas)", "Task": "Tarea", "Crew size (people)": "Personas", "Days": "Días", "Hours / day": "Horas / día", "Add crew-days line": "Agregar cuadrilla", "Change orders": "Órdenes de cambio", "Change order": "Orden de cambio", "Cost": "Costo", "Price": "Precio", "+ Change-order line": "+ Agregar orden de cambio", "Price change orders on their own, with their own markup, so they show separately on the breakdown and don't quietly eat your contingency or margin.": "Cotice las órdenes de cambio por separado, con su propio margen, para que no se coman su contingencia ni su utilidad.", "Recurring & one-time charges": "Cargos recurrentes y únicos", "Contract term (months)": "Plazo (meses)", "Recurring (monthly)": "Recurrentes (mensuales)", "Description": "Descripción", "Monthly unit price": "Precio unitario mensual", "Monthly total": "Total mensual", "+ Recurring line": "+ Agregar partida recurrente", "One-time (installation, setup)": "Únicos (instalación)", "+ One-time line": "+ Agregar cargo único", "Did I forget anything?": "¿Olvidé algo?", "Check for missing lines": "Revisar partidas faltantes", "Checks your scope notes and lines for items contractors commonly miss (disposal, delivery, permits, equipment, inspection...).": "Revisa su alcance y partidas buscando conceptos que se suelen olvidar (desecho, flete, permisos, equipo, inspección...).", "Pricing": "Precios", "Contingency %": "Contingencia %", "Minimum margin floor %": "Margen mínimo %", "Lock contingency": "Bloquear contingencia", "Currency": "Moneda", "Tax": "Impuesto", "Locked (change-order cushion)": "Bloqueada (colchón para cambios)", "Unlocked": "Desbloqueada", "No tax line": "Sin impuesto", "Bid breakdown": "Desglose del presupuesto", "Direct cost": "Costo directo", "Contingency": "Contingencia", "Markup": "Margen de ganancia", "Profit": "Utilidad", "Margin": "Margen", "Copy bid summary": "Copiar resumen", "Recurring & one-time": "Recurrentes y únicos", "Monthly recurring (MRC)": "Mensual recurrente (MRC)", "One-time total (NRC)": "Total único (NRC)", "First-year total": "Total primer año", "Bid total": "Total del presupuesto", "Total ex GST": "Total sin GST", "Final total inc. GST": "Total con GST", "Total contract value": "Valor total del contrato", "Missing:": "Falta:", "Add line": "Agregar partida", "No common items missing. Looks complete.": "No faltan conceptos comunes. Se ve completo.", "Checking...": "Revisando...", "+ Labor line": "+ Agregar partida (mano de obra)", "+ Labour line": "+ Agregar partida (mano de obra)", "Disposal / haul-off / dump fees": "Desecho / retiro de escombro", "Material delivery": "Flete de materiales", "Equipment rental (skid steer, compactor, scissor lift)": "Renta de equipo (minicargador, compactadora, plataforma)", "Permits / council or city approval": "Permisos / licencia municipal", "Inspection, testing and compliance certificate": "Inspección, pruebas y certificado", "Drainage (drain rock, pipe, fabric) behind retaining wall": "Drenaje detrás del muro de contención", "Switchboard upgrade / capacity check": "Actualización de tablero eléctrico", "Change-order / owner-allowance cushion": "Colchón para órdenes de cambio", "Infection control (ICRA) barriers for healthcare work": "Barreras de control de infecciones (ICRA)", "Crane / hoist rental to lift rooftop equipment (grua)": "Renta de grúa / polipasto para subir equipos al techo", "Startup / commissioning (arranque)": "Arranque y puesta en marcha", "Site cleanup / restoration": "Limpieza final de obra", "Travel / mobilization": "Traslado / movilización"};
-Object.assign(ES,{"Copy client bid":"Copiar presupuesto para cliente","Client version: line prices include your markup and contingency. No cost, markup or margin shown.":"Versión para cliente: los precios ya incluyen su margen y contingencia. No muestra costos ni margen.",
+Object.assign(ES,{"Units":"Unidades","Roof pitch (degrees)":"Pendiente del techo (grados)","Waste %":"Desperdicio %","Length (m)":"Largo (m)","Width (m)":"Ancho (m)","Price / m²":"Precio / m²","Price / sq ft":"Precio / pie²",
+  "Scaffolding / edge protection (working at height)":"Andamio / protección perimetral (trabajo en altura)","Flashings, ridging and barge (roofing)":"Tapajuntas y cumbreras (techado)","Copy client bid":"Copiar presupuesto para cliente","Client version: line prices include your markup and contingency. No cost, markup or margin shown.":"Versión para cliente: los precios ya incluyen su margen y contingencia. No muestra costos ni margen.",
   "QUOTE":"COTIZACIÓN","Prepared for":"Para","Date":"Fecha","Scope":"Alcance","TOTAL":"TOTAL","Monthly recurring":"Mensual recurrente","One-time charges":"Cargos únicos","Copied.":"Copiado.","Copy failed; select and copy below.":"No se pudo copiar; seleccione y copie abajo."});
 let LANG="en";
 function tr(s){return LANG==="es"&&ES[s]||s}
@@ -337,10 +350,11 @@ function calc(){
   const LW=labWord();document.querySelectorAll(".lw").forEach(e=>{if(e.textContent!==LW)e.textContent=LW});
   $("addLab").textContent=tr(`+ ${LW} line`);
   $("auGst").setAttribute("aria-pressed",String(g===10&&$("cur").value==="AUD"));
-  const aL=num($("aLen").value),aW=num($("aWid").value),aP=num($("aPrice").value),aA=aL*aW;
+  const AR=areaCalc();
   const cN=num($("cdPeople").value),cD=num($("cdDays").value),cH=num($("cdHours").value),cR=num($("cdRate").value),cT=cN*cD*cH;
   $("cdOut").textContent=LANG==="es"?`${cN} personas x ${cD} días x ${cH} h = ${cT.toLocaleString()} h x ${fmt(cR)}/h = ${fmt(cT*cR)}`:`${cN} people x ${cD} days x ${cH} h = ${cT.toLocaleString()} h x ${fmt(cR)}/h = ${fmt(cT*cR)}`;
-  $("aOut").textContent=`${aL} ft x ${aW} ft = ${aA.toLocaleString("en-US")} sq ft x ${fmt(aP)}/sq ft = ${fmt(aA*aP)}`;
+  [["aLen",`Length (${AR.U})`],["aWid",`Width (${AR.U})`],["aPrice",`Price / ${AR.A}`]].forEach(([id,k])=>{const l=document.querySelector(`label[for="${id}"]`);l.dataset.i18n=k;const v=tr(k);if(l.textContent!==v)l.textContent=v});
+  $("aOut").textContent=AR.text;
   let mrc=0,nrc=0;
   rcs.forEach((x,i)=>{const t=num(x[1])*num(x[2]);mrc+=t;const c=$("rt"+i);if(c)c.textContent=fmt(t)+" /mo"});
   ots.forEach((x,i)=>{const t=num(x[1])*num(x[2]);nrc+=t;const c=$("ot"+i);if(c)c.textContent=fmt(t)});
@@ -353,8 +367,25 @@ function calc(){
   window.__bid={materials:mat,labor:lab,direct,contingency:cont,markup:mark,changeOrderCost:coCost,changeOrderMarkup:coMark,gst,total,profit,marginPct:margin,floorPct:floor,belowFloor:below};
 }
 
+// ---- Area line: ft or m, optional roof pitch and waste ----
+function r2(v){return Math.round(v*100)/100}
+function n2(v){return r2(v).toLocaleString("en-US",{maximumFractionDigits:2})}
+function areaCalc(){
+  const U=$("aUnit").value==="m"?"m":"ft",A=U==="m"?"m²":"sq ft";
+  const L=num($("aLen").value),W=num($("aWid").value),P=num($("aPrice").value);
+  const pitch=Math.max(0,Math.min(80,num($("aPitch").value))),waste=Math.max(0,num($("aWaste").value));
+  const plan=L*W,pf=1/Math.cos(pitch*Math.PI/180),roof=plan*pf,adj=pitch>0||waste>0;
+  const qty=adj?r2(roof*(1+waste/100)):plan;
+  const text=!adj?`${L} ${U} x ${W} ${U} = ${plan.toLocaleString("en-US")} ${A} x ${fmt(P)}/${A} = ${fmt(plan*P)}`
+    :`${L} ${U} x ${W} ${U} = ${n2(plan)} ${A} plan`+(pitch?`, x ${pf.toFixed(4)} pitch (${pitch}°) = ${n2(roof)} ${A}`:"")+(waste?`, +${waste}% waste = ${n2(qty)} ${A}`:"")+` x ${fmt(P)} = ${fmt(qty*P)}`;
+  const name=`${$("aName").value} (${L}x${W} ${U}${pitch?`, ${pitch}° pitch`:""}${waste?`, +${waste}% waste`:""})`;
+  return {U,A,L,W,P,pitch,waste,plan,roof,qty,text,name};
+}
+const AREA_DEFAULT={name:"Paver patio (installed)",unit:"ft",len:20,wid:20,price:12,pitch:0,waste:0};
+function setArea(a){$("aName").value=a.name;$("aUnit").value=a.unit;$("aLen").value=a.len;$("aWid").value=a.wid;$("aPrice").value=a.price;$("aPitch").value=a.pitch;$("aWaste").value=a.waste}
+
 function load(p){
-  const P=PRESETS[p];curId=null;
+  const P=PRESETS[p];curId=null;setArea(P.area||AREA_DEFAULT);
   $("job").value=P.job;$("desc").value=P.desc;
   mats=P.mats.map(r=>r.slice());labs=P.labs.map(r=>r.slice());
   cos=(P.cos||[]).map(r=>r.slice());rcs=(P.rcs||[]).map(r=>r.slice());ots=(P.ots||[]).map(r=>r.slice());$("rcTerm").value=P.term||36;
@@ -366,9 +397,9 @@ function load(p){
 document.addEventListener("input",e=>{
   const t=e.target;if(t.dataset.t){const arr={m:mats,l:labs,r:rcs,o:ots,c:cos}[t.dataset.t];const f=+t.dataset.f;
     arr[+t.dataset.i][f]=(t.type==="number")?t.value:t.value;calc();}
-  else if(["markup","cont","cur","gst","floor","aLen","aWid","aPrice","rcTerm","cdName","cdPeople","cdDays","cdHours","cdRate"].includes(t.id))calc();
+  else if(["markup","cont","cur","gst","floor","aLen","aWid","aPrice","aPitch","aWaste","aName","aUnit","rcTerm","cdName","cdPeople","cdDays","cdHours","cdRate"].includes(t.id))calc();
 });
-document.addEventListener("change",e=>{if(["cur","gst","lockCont"].includes(e.target.id))calc()});
+document.addEventListener("change",e=>{if(["cur","gst","lockCont","aUnit"].includes(e.target.id))calc()});
 document.addEventListener("click",e=>{
   const t=e.target;
   if(t.dataset.preset)load(t.dataset.preset);
@@ -376,7 +407,7 @@ document.addEventListener("click",e=>{
   if(t.dataset.addrule!==undefined){const r=RULES[+t.dataset.addrule];if(r.add)mats.push(r.add.slice());if(r.addLab)labs.push(r.addLab.slice());render();t.closest(".flag").remove();}
 });
 $("addMat").onclick=()=>{mats.push(["",1,"ea",0]);render()};
-$("aAdd").onclick=()=>{const L=num($("aLen").value),W=num($("aWid").value);mats.push([`${$("aName").value} (${L}x${W} ft)`,L*W,"sq ft",num($("aPrice").value)]);render();};
+$("aAdd").onclick=()=>{const a=areaCalc();mats.push([a.name,a.qty,a.A,a.P]);render();};
 $("addLab").onclick=()=>{labs.push(["",0,0]);render()};
 function crewLine(name,n,d,h,rate){return [`${name} (${n} people x ${d} days x ${h} h)`,n*d*h,rate]}
 $("cdAdd").onclick=()=>{labs.push(crewLine($("cdName").value.trim()||"Crew task",num($("cdPeople").value),num($("cdDays").value),num($("cdHours").value),num($("cdRate").value)));render();};

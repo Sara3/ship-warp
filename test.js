@@ -335,6 +335,49 @@ const startsWithMoney = (s, m) => s === m || s.startsWith(m + " ");
   ok(!tc.includes("TOTAL: $0.00"), "telecom client bid has no empty project total");
 }
 
+// ---------- Kauri Ridge: area builder ft/m + pitch + waste, Re-roof (NZ) template ----------
+{
+  const t = boot();
+  t.preset("landscape");
+  eq(t.$("aUnit").value, "ft", "area builder defaults to ft");
+  eq(t.txt("aOut"), "20 ft x 20 ft = 400 sq ft x $12.00/sq ft = $4,800.00", "default ft preview unchanged");
+  t.set("aUnit", "m"); t.set("aLen", "100"); t.set("aWid", "1"); t.set("aPitch", "25"); t.set("aWaste", "0"); t.set("aPrice", "1");
+  ok(t.txt("aOut").includes("= 110.34 m²"), `100 m² plan at 25° -> 110.34 m² (got ${t.txt("aOut")})`);
+  eq(t.d.querySelector('label[for="aLen"]').textContent, "Length (m)", "length label in metres");
+  eq(t.d.querySelector('label[for="aPrice"]').textContent, "Price / m²", "price label in m²");
+  t.preset("reroofnz");
+  eq(t.$("cur").value, "NZD", "re-roof NZD"); eq(t.$("gst").value, "15", "re-roof GST 15%");
+  eq(t.$("aUnit").value, "m", "re-roof area in m"); eq(t.$("aPitch").value, "25", "re-roof pitch 25"); eq(t.$("aWaste").value, "10", "re-roof waste 10");
+  eq(t.txt("aOut"), "12 m x 10 m = 120 m² plan, x 1.1034 pitch (25°) = 132.41 m², +10% waste = 145.65 m² x NZD $68.00 = NZD $9,904.20", "pitch + waste preview working");
+  eq(t.txt("gstLabel"), "GST 15%", "NZ GST label");
+  eq(t.txt("totalLabel"), "Final total inc. GST", "NZ inc GST label");
+  ok(t.$("summary").textContent.includes("Labour"), "Labour spelling for NZD");
+  eq(t.txt("marginWarn"), "", "re-roof template above floor");
+  const n = t.d.querySelectorAll("#matTable tbody tr").length;
+  t.$("aAdd").click();
+  const rows = t.d.querySelectorAll("#matTable tbody tr"), last = rows[rows.length - 1];
+  eq(rows.length, n + 1, "area line added");
+  eq(last.querySelector('input[data-f="0"]').value, "Long-run iron roofing (installed) (12x10 m, 25° pitch, +10% waste)", "area line name includes pitch/waste");
+  eq(last.querySelector('input[data-f="1"]').value, "145.65", "area qty rounded to 2 dp");
+  eq(last.querySelector('input[data-f="2"]').value, "m²", "area unit m²");
+  ok(last.textContent.includes("NZD $9,904.20"), "area line total");
+  t.$("checkBtn").click();
+  ok(!/Scaffolding|Flashings/.test(t.txt("flags")), "re-roof template has scaffolding + flashings");
+  t.d.querySelectorAll('#matTable [data-del="m"]')[3].click(); // scaffolding
+  t.d.querySelectorAll('#matTable [data-del="m"]')[1].click(); // flashings
+  t.$("desc").value = "Re-roof 12 x 10 m house, strip old corrugated iron, long-run roofing.";
+  t.$("checkBtn").click();
+  ok(/Scaffolding \/ edge protection/.test(t.txt("flags")), "scaffolding flagged for re-roof");
+  ok(/Flashings, ridging/.test(t.txt("flags")), "flashings flagged for re-roof");
+  t.preset("landscape");
+  eq(t.$("aUnit").value, "ft", "other templates reset area builder to ft");
+  eq(t.$("aPitch").value, "0", "pitch reset");
+  t.set("aLen", "20"); t.set("aWid", "20"); t.set("aPrice", "12"); t.$("aAdd").click();
+  const l2 = [...t.d.querySelectorAll("#matTable tbody tr")].pop();
+  eq(l2.querySelector('input[data-f="0"]').value, "Paver patio (installed) (20x20 ft)", "default ft line name unchanged");
+  eq(l2.querySelector('input[data-f="2"]').value, "sq ft", "default unit sq ft");
+}
+
 // @@NEXT@@
 
 console.log(`${failures ? "FAILED" : "PASSED"}: ${passes} passed, ${failures} failed`);
