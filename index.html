@@ -39,150 +39,152 @@
   .mute{color:var(--mute);font-size:13px}
   footer{text-align:center;padding:20px;color:var(--mute);font-size:13px}
   .chip{padding:3px 10px;font-size:12px;border-radius:14px}
+  header .chip{background:transparent;color:#fff;border-color:#6b6a64}
   .chip[aria-pressed="true"]{background:var(--acc);color:#fff;border-color:var(--acc)}
   #marginWarn{font-size:13px;color:var(--warn);margin-top:6px}
 </style>
 </head>
 <body>
 <header>
-  <div><h1>BidBench</h1><span>Itemized contractor bids. See your margin before it goes out the door.</span></div>
-  <span>Team: <strong style="color:#fff">Ship Warp Sorcery</strong></span>
+  <div><h1>BidBench</h1><span data-i18n="Itemized contractor bids. See your margin before it goes out the door.">Itemized contractor bids. See your margin before it goes out the door.</span></div>
+  <span style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><span role="group" aria-label="Language"><button id="langEn" class="chip" aria-pressed="true">English</button> <button id="langEs" class="chip" aria-pressed="false" lang="es">Español</button></span>
+  <span>Team: <strong style="color:#fff">Ship Warp Sorcery</strong></span></span>
 </header>
 
 <main>
 <section>
   <div class="card">
-    <h2>Job</h2>
+    <h2 data-i18n="Job">Job</h2>
     <div class="row2">
-      <div><label for="job">Job name</label><input id="job" value="Backyard paver patio + retaining wall"></div>
-      <div><label for="client">Client</label><input id="client" value="Homeowner"></div>
+      <div><label for="job" data-i18n="Job name">Job name</label><input id="job" value="Backyard paver patio + retaining wall"></div>
+      <div><label for="client" data-i18n="Client">Client</label><input id="client" value="Homeowner"></div>
     </div>
-    <div style="margin-top:10px"><label for="desc">Scope notes (in your own words)</label>
+    <div style="margin-top:10px"><label for="desc" data-i18n="Scope notes (in your own words)">Scope notes (in your own words)</label>
       <textarea id="desc">Tear out old lawn, 400 sq ft paver patio, 40 ft block retaining wall, base gravel, compact.</textarea></div>
     <div class="actions">
-      <label class="mute" style="margin:0;align-self:center">Start from:</label>
-      <button data-preset="fitout">Commercial fit-out</button>
-      <button data-preset="landscape">Landscape / hardscape</button>
-      <button data-preset="electrical">Electrical fit-out</button>
-      <button data-preset="solar">Solar + battery</button>
+      <label class="mute" style="margin:0;align-self:center" data-i18n="Start from:">Start from:</label>
+      <button data-preset="fitout" data-i18n="Commercial fit-out">Commercial fit-out</button>
+      <button data-preset="landscape" data-i18n="Landscape / hardscape">Landscape / hardscape</button>
+      <button data-preset="electrical" data-i18n="Electrical fit-out">Electrical fit-out</button>
+      <button data-preset="solar" data-i18n="Solar + battery">Solar + battery</button>
       <button data-preset="hvacmx">HVAC industrial (MX)</button>
-      <button data-preset="telecom">Enterprise telecom quote</button>
-      <button data-preset="blank">Blank</button>
+      <button data-preset="telecom" data-i18n="Enterprise telecom quote">Enterprise telecom quote</button>
+      <button data-preset="blank" data-i18n="Blank">Blank</button>
     </div>
     <div class="actions" id="savedBox" style="border-top:1px dashed var(--line);padding-top:10px">
-      <button class="primary" id="saveBtn">Save bid</button>
-      <button id="dupBtn">Duplicate</button>
+      <button class="primary" id="saveBtn" data-i18n="Save bid">Save bid</button>
+      <button id="dupBtn" data-i18n="Duplicate">Duplicate</button>
       <select id="savedSel" aria-label="Saved bids" style="width:auto;min-width:180px;flex:1"></select>
-      <button id="loadBtn">Load</button>
-      <button id="delBtn">Delete</button>
+      <button id="loadBtn" data-i18n="Load">Load</button>
+      <button id="delBtn" data-i18n="Delete">Delete</button>
     </div>
-    <p class="mute" id="saveMsg" style="margin:6px 0 0">Bids are saved in this browser only.</p>
+    <p class="mute" id="saveMsg" style="margin:6px 0 0" data-i18n="Bids are saved in this browser only.">Bids are saved in this browser only.</p>
   </div>
 
   <div class="card">
-    <h2>Materials</h2>
-    <table id="matTable"><thead><tr><th>Item</th><th class="num">Qty</th><th>Unit</th><th class="num">Unit cost</th><th class="num" title="Leave blank to use the global markup">Markup %</th><th class="num">Line total</th><th></th></tr></thead><tbody></tbody></table>
-    <div class="actions"><button id="addMat">+ Material line</button></div>
+    <h2 data-i18n="Materials">Materials</h2>
+    <table id="matTable"><thead><tr><th data-i18n="Item">Item</th><th class="num" data-i18n="Qty">Qty</th><th data-i18n="Unit">Unit</th><th class="num" data-i18n="Unit cost">Unit cost</th><th class="num" title="Leave blank to use the global markup" data-i18n="Markup %">Markup %</th><th class="num" data-i18n="Line total">Line total</th><th></th></tr></thead><tbody></tbody></table>
+    <div class="actions"><button id="addMat" data-i18n="+ Material line">+ Material line</button></div>
     <div style="margin-top:12px;padding:10px;border:1px dashed var(--line);border-radius:8px">
-      <strong style="font-size:14px">Square-footage line</strong>
+      <strong style="font-size:14px" data-i18n="Square-footage line">Square-footage line</strong>
       <div class="row" style="grid-template-columns:2fr 1fr 1fr 1fr;margin-top:6px">
-        <div><label for="aName">Item</label><input id="aName" value="Paver patio (installed)"></div>
-        <div><label for="aLen">Length (ft)</label><input id="aLen" type="number" step="any" value="20"></div>
-        <div><label for="aWid">Width (ft)</label><input id="aWid" type="number" step="any" value="20"></div>
-        <div><label for="aPrice">Price / sq ft</label><input id="aPrice" type="number" step="any" value="12"></div>
+        <div><label for="aName" data-i18n="Item">Item</label><input id="aName" value="Paver patio (installed)"></div>
+        <div><label for="aLen" data-i18n="Length (ft)">Length (ft)</label><input id="aLen" type="number" step="any" value="20"></div>
+        <div><label for="aWid" data-i18n="Width (ft)">Width (ft)</label><input id="aWid" type="number" step="any" value="20"></div>
+        <div><label for="aPrice" data-i18n="Price / sq ft">Price / sq ft</label><input id="aPrice" type="number" step="any" value="12"></div>
       </div>
       <p class="mute" id="aOut" style="margin:8px 0"></p>
-      <button class="primary" id="aAdd">Add to bid</button>
+      <button class="primary" id="aAdd" data-i18n="Add to bid">Add to bid</button>
     </div>
   </div>
 
   <div class="card">
     <h2 class="lw">Labor</h2>
-    <table id="labTable"><thead><tr><th>Crew / task</th><th class="num">Hours</th><th class="num">Rate / hr</th><th class="num" title="Leave blank to use the global markup">Markup %</th><th class="num">Line total</th><th></th></tr></thead><tbody></tbody></table>
-    <div class="actions"><button id="addLab">+ <span class="lw">Labor</span> line</button></div>
+    <table id="labTable"><thead><tr><th data-i18n="Crew / task">Crew / task</th><th class="num" data-i18n="Hours">Hours</th><th class="num" data-i18n="Rate / hr">Rate / hr</th><th class="num" title="Leave blank to use the global markup" data-i18n="Markup %">Markup %</th><th class="num" data-i18n="Line total">Line total</th><th></th></tr></thead><tbody></tbody></table>
+    <div class="actions"><button id="addLab">+ Labor line</button></div>
     <div style="margin-top:12px;padding:10px;border:1px dashed var(--line);border-radius:8px">
-      <strong style="font-size:14px">Crew-days line</strong> <span class="mute">(people x days x hours/day, instead of a lump pool of hours)</span>
+      <strong style="font-size:14px" data-i18n="Crew-days line">Crew-days line</strong> <span class="mute" data-i18n="(people x days x hours/day, instead of a lump pool of hours)">(people x days x hours/day, instead of a lump pool of hours)</span>
       <div class="row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr;margin-top:6px">
-        <div><label for="cdName">Task</label><input id="cdName" value="Crew task"></div>
-        <div><label for="cdPeople">Crew size (people)</label><input id="cdPeople" type="number" step="any" value="3"></div>
-        <div><label for="cdDays">Days</label><input id="cdDays" type="number" step="any" value="2"></div>
-        <div><label for="cdHours">Hours / day</label><input id="cdHours" type="number" step="any" value="8"></div>
-        <div><label for="cdRate">Rate / hr</label><input id="cdRate" type="number" step="any" value="60"></div>
+        <div><label for="cdName" data-i18n="Task">Task</label><input id="cdName" value="Crew task"></div>
+        <div><label for="cdPeople" data-i18n="Crew size (people)">Crew size (people)</label><input id="cdPeople" type="number" step="any" value="3"></div>
+        <div><label for="cdDays" data-i18n="Days">Days</label><input id="cdDays" type="number" step="any" value="2"></div>
+        <div><label for="cdHours" data-i18n="Hours / day">Hours / day</label><input id="cdHours" type="number" step="any" value="8"></div>
+        <div><label for="cdRate" data-i18n="Rate / hr">Rate / hr</label><input id="cdRate" type="number" step="any" value="60"></div>
       </div>
       <p class="mute" id="cdOut" style="margin:8px 0"></p>
-      <button class="primary" id="cdAdd">Add crew-days line</button>
+      <button class="primary" id="cdAdd" data-i18n="Add crew-days line">Add crew-days line</button>
     </div>
   </div>
 
   <div class="card" id="coCard">
-    <h2>Change orders</h2>
-    <p class="mute" style="margin-top:0">Price change orders on their own, with their own markup, so they show separately on the breakdown and don't quietly eat your contingency or margin.</p>
-    <table id="coTable" style="display:none"><thead><tr><th>Change order</th><th class="num">Cost</th><th class="num" title="Leave blank to use the global markup">Markup %</th><th class="num">Price</th><th></th></tr></thead><tbody></tbody></table>
-    <div class="actions"><button id="addCo">+ Change-order line</button></div>
+    <h2 data-i18n="Change orders">Change orders</h2>
+    <p class="mute" style="margin-top:0" data-i18n="Price change orders on their own, with their own markup, so they show separately on the breakdown and don&#x27;t quietly eat your contingency or margin.">Price change orders on their own, with their own markup, so they show separately on the breakdown and don't quietly eat your contingency or margin.</p>
+    <table id="coTable" style="display:none"><thead><tr><th data-i18n="Change order">Change order</th><th class="num" data-i18n="Cost">Cost</th><th class="num" title="Leave blank to use the global markup" data-i18n="Markup %">Markup %</th><th class="num" data-i18n="Price">Price</th><th></th></tr></thead><tbody></tbody></table>
+    <div class="actions"><button id="addCo" data-i18n="+ Change-order line">+ Change-order line</button></div>
   </div>
 
   <div class="card" id="rcCard">
-    <h2>Recurring &amp; one-time charges</h2>
+    <h2 data-i18n="Recurring &amp; one-time charges">Recurring &amp; one-time charges</h2>
     <p class="mute" style="margin-top:0">For service contracts (telecom, managed services). Monthly charges and one-time charges are kept separate and never added together into the monthly figure.</p>
-    <div style="max-width:200px"><label for="rcTerm">Contract term (months)</label><input id="rcTerm" type="number" min="1" step="1" value="36"></div>
-    <h3 style="font-size:13px;margin:12px 0 4px">Recurring (monthly)</h3>
-    <table id="rcTable"><thead><tr><th>Description</th><th class="num">Qty</th><th class="num">Monthly unit price</th><th class="num">Monthly total</th><th></th></tr></thead><tbody></tbody></table>
-    <div class="actions"><button id="addRc">+ Recurring line</button></div>
-    <h3 style="font-size:13px;margin:12px 0 4px">One-time (installation, setup)</h3>
-    <table id="otTable"><thead><tr><th>Description</th><th class="num">Qty</th><th class="num">Unit price</th><th class="num">Line total</th><th></th></tr></thead><tbody></tbody></table>
-    <div class="actions"><button id="addOt">+ One-time line</button></div>
+    <div style="max-width:200px"><label for="rcTerm" data-i18n="Contract term (months)">Contract term (months)</label><input id="rcTerm" type="number" min="1" step="1" value="36"></div>
+    <h3 style="font-size:13px;margin:12px 0 4px" data-i18n="Recurring (monthly)">Recurring (monthly)</h3>
+    <table id="rcTable"><thead><tr><th data-i18n="Description">Description</th><th class="num" data-i18n="Qty">Qty</th><th class="num" data-i18n="Monthly unit price">Monthly unit price</th><th class="num" data-i18n="Monthly total">Monthly total</th><th></th></tr></thead><tbody></tbody></table>
+    <div class="actions"><button id="addRc" data-i18n="+ Recurring line">+ Recurring line</button></div>
+    <h3 style="font-size:13px;margin:12px 0 4px" data-i18n="One-time (installation, setup)">One-time (installation, setup)</h3>
+    <table id="otTable"><thead><tr><th data-i18n="Description">Description</th><th class="num" data-i18n="Qty">Qty</th><th class="num">Unit price</th><th class="num" data-i18n="Line total">Line total</th><th></th></tr></thead><tbody></tbody></table>
+    <div class="actions"><button id="addOt" data-i18n="+ One-time line">+ One-time line</button></div>
   </div>
 
   <div class="card">
-    <h2>Did I forget anything?</h2>
-    <p class="mute" style="margin-top:0">Checks your scope notes and lines for items contractors commonly miss (disposal, delivery, permits, equipment, inspection...).</p>
-    <button class="primary" id="checkBtn">Check for missing lines</button>
+    <h2 data-i18n="Did I forget anything?">Did I forget anything?</h2>
+    <p class="mute" style="margin-top:0" data-i18n="Checks your scope notes and lines for items contractors commonly miss (disposal, delivery, permits, equipment, inspection...).">Checks your scope notes and lines for items contractors commonly miss (disposal, delivery, permits, equipment, inspection...).</p>
+    <button class="primary" id="checkBtn" data-i18n="Check for missing lines">Check for missing lines</button>
     <div id="flags"></div>
   </div>
 </section>
 
 <aside>
   <div class="card">
-    <h2>Pricing</h2>
+    <h2 data-i18n="Pricing">Pricing</h2>
     <div class="row2">
-      <div><label for="markup">Markup %</label><input id="markup" type="number" step="0.5" value="20"></div>
-      <div><label for="cont">Contingency %</label><input id="cont" type="number" step="0.5" value="10"></div>
-      <div><label for="floor">Minimum margin floor %</label><input id="floor" type="number" step="0.5" value="15"></div>
-      <div><label for="lockCont">Lock contingency</label><select id="lockCont"><option value="1">Locked (change-order cushion)</option><option value="0">Unlocked</option></select></div>
-      <div><label for="cur">Currency</label>
+      <div><label for="markup" data-i18n="Markup %">Markup %</label><input id="markup" type="number" step="0.5" value="20"></div>
+      <div><label for="cont" data-i18n="Contingency %">Contingency %</label><input id="cont" type="number" step="0.5" value="10"></div>
+      <div><label for="floor" data-i18n="Minimum margin floor %">Minimum margin floor %</label><input id="floor" type="number" step="0.5" value="15"></div>
+      <div><label for="lockCont" data-i18n="Lock contingency">Lock contingency</label><select id="lockCont"><option value="1" data-i18n="Locked (change-order cushion)">Locked (change-order cushion)</option><option value="0" data-i18n="Unlocked">Unlocked</option></select></div>
+      <div><label for="cur" data-i18n="Currency">Currency</label>
         <select id="cur"><option value="USD">USD $</option><option value="AUD">AUD $</option><option value="NZD">NZD $</option><option value="CAD">CAD $</option><option value="MXN">MXN $</option></select></div>
-      <div><label for="gst">Tax</label>
-        <select id="gst"><option value="0">No tax line</option><option value="10">GST 10% (AU)</option><option value="15">GST 15% (NZ)</option><option value="16">IVA 16% (MX)</option></select></div>
+      <div><label for="gst" data-i18n="Tax">Tax</label>
+        <select id="gst"><option value="0" data-i18n="No tax line">No tax line</option><option value="10">GST 10% (AU)</option><option value="15">GST 15% (NZ)</option><option value="16">IVA 16% (MX)</option></select></div>
     </div>
   </div>
 
   <div class="card sum" id="rcSummary" style="display:none">
-    <h2>Recurring &amp; one-time</h2>
-    <div><span>Monthly recurring (MRC)</span><span><span id="rcMrc"></span> /mo</span></div>
-    <div><span>One-time total (NRC)</span><span id="rcNrc"></span></div>
-    <div><span id="rcFyLabel">First-year total</span><span id="rcFy"></span></div>
+    <h2 data-i18n="Recurring &amp; one-time">Recurring &amp; one-time</h2>
+    <div><span data-i18n="Monthly recurring (MRC)">Monthly recurring (MRC)</span><span><span id="rcMrc"></span> /mo</span></div>
+    <div><span data-i18n="One-time total (NRC)">One-time total (NRC)</span><span id="rcNrc"></span></div>
+    <div><span id="rcFyLabel" data-i18n="First-year total">First-year total</span><span id="rcFy"></span></div>
     <div class="total"><span id="rcTcvLabel">Total contract value</span><span id="rcTcv"></span></div>
     <p class="mute" style="margin:6px 0 0">First year = MRC x <span id="rcFyMonths">12</span> months + one-time. Contract value = MRC x <span id="rcTermOut">36</span> months + one-time. Separate from the project bid breakdown below.</p>
   </div>
 
   <div class="card sum" id="summary">
-    <h2>Bid breakdown</h2>
-    <div><span>Materials</span><span id="sMat"></span></div>
+    <h2 data-i18n="Bid breakdown">Bid breakdown</h2>
+    <div><span data-i18n="Materials">Materials</span><span id="sMat"></span></div>
     <div><span class="lw">Labor</span><span id="sLab"></span></div>
-    <div><span>Direct cost</span><span id="sDirect"></span></div>
-    <div><span>Contingency</span><span id="sCont"></span></div>
-    <div><span>Markup</span><span id="sMark"></span></div>
-    <div id="coRow" style="display:none"><span>Change orders <small class="mute" id="sCOd"></small></span><span id="sCO"></span></div>
+    <div><span data-i18n="Direct cost">Direct cost</span><span id="sDirect"></span></div>
+    <div><span data-i18n="Contingency">Contingency</span><span id="sCont"></span></div>
+    <div><span data-i18n="Markup">Markup</span><span id="sMark"></span></div>
+    <div id="coRow" style="display:none"><span><span data-i18n="Change orders">Change orders</span> <small class="mute" id="sCOd"></small></span><span id="sCO"></span></div>
     <div id="exRow"><span id="exLabel">Total ex GST</span><span id="sEx"></span></div>
     <div id="gstRow"><span id="gstLabel">GST</span><span id="sGst"></span></div>
     <div class="total"><span id="totalLabel">Bid total</span><span id="sTotal"></span></div>
     <div style="border:none;padding:2px 0 6px;justify-content:flex-end;gap:6px"><button id="auGst" class="chip" aria-pressed="false" title="Australian GST: switch to AUD and add GST 10%">AU: GST 10%</button></div>
-    <div class="profit"><span>Profit</span><span id="sProfit"></span></div>
-    <div style="display:block;border:none"><span>Margin</span> <strong id="sMargin" style="float:right"></strong>
+    <div class="profit"><span data-i18n="Profit">Profit</span><span id="sProfit"></span></div>
+    <div style="display:block;border:none"><span data-i18n="Margin">Margin</span> <strong id="sMargin" style="float:right"></strong>
       <div class="bar"><i id="mBar"></i></div>
       <div id="marginWarn"></div>
     </div>
-    <div class="actions"><button id="copyBtn">Copy bid summary</button></div>
+    <div class="actions"><button id="copyBtn" data-i18n="Copy bid summary">Copy bid summary</button></div>
     <p class="mute" id="copied"></p>
   </div>
 </aside>
@@ -229,11 +231,18 @@ const RULES=[
   {k:"travel",t:"Travel / mobilization",match:/travel|mobili|call-?out/i,when:/./,addLab:["Travel / mobilization",2,60]}
 ];
 const $=id=>document.getElementById(id);
+const ES={"Itemized contractor bids. See your margin before it goes out the door.": "Presupuestos detallados para contratistas. Vea su margen antes de enviarlo.", "Job": "Obra", "Job name": "Nombre de la obra", "Client": "Cliente", "Scope notes (in your own words)": "Alcance (en sus palabras)", "Start from:": "Empezar con:", "Commercial fit-out": "Acondicionamiento comercial", "Landscape / hardscape": "Paisajismo", "Electrical fit-out": "Instalación eléctrica", "Solar + battery": "Solar + batería", "Enterprise telecom quote": "Cotización telecom empresarial", "Blank": "En blanco", "Save bid": "Guardar", "Duplicate": "Duplicar", "Load": "Abrir", "Delete": "Eliminar", "Bids are saved in this browser only.": "Los presupuestos se guardan solo en este navegador.", "Materials": "Materiales", "Item": "Concepto", "Qty": "Cant.", "Unit": "Unidad", "Unit cost": "Costo unitario", "Markup %": "Margen de ganancia %", "Line total": "Importe", "+ Material line": "+ Agregar partida", "Square-footage line": "Partida por pie cuadrado", "Length (ft)": "Largo (pies)", "Width (ft)": "Ancho (pies)", "Price / sq ft": "Precio / pie²", "Add to bid": "Agregar al presupuesto", "Crew / task": "Cuadrilla / tarea", "Hours": "Horas", "Rate / hr": "Tarifa / hora", "Crew-days line": "Cuadrilla: personas x días x horas", "(people x days x hours/day, instead of a lump pool of hours)": "(en lugar de una bolsa de horas)", "Task": "Tarea", "Crew size (people)": "Personas", "Days": "Días", "Hours / day": "Horas / día", "Add crew-days line": "Agregar cuadrilla", "Change orders": "Órdenes de cambio", "Change order": "Orden de cambio", "Cost": "Costo", "Price": "Precio", "+ Change-order line": "+ Agregar orden de cambio", "Price change orders on their own, with their own markup, so they show separately on the breakdown and don't quietly eat your contingency or margin.": "Cotice las órdenes de cambio por separado, con su propio margen, para que no se coman su contingencia ni su utilidad.", "Recurring & one-time charges": "Cargos recurrentes y únicos", "Contract term (months)": "Plazo (meses)", "Recurring (monthly)": "Recurrentes (mensuales)", "Description": "Descripción", "Monthly unit price": "Precio unitario mensual", "Monthly total": "Total mensual", "+ Recurring line": "+ Agregar partida recurrente", "One-time (installation, setup)": "Únicos (instalación)", "+ One-time line": "+ Agregar cargo único", "Did I forget anything?": "¿Olvidé algo?", "Check for missing lines": "Revisar partidas faltantes", "Checks your scope notes and lines for items contractors commonly miss (disposal, delivery, permits, equipment, inspection...).": "Revisa su alcance y partidas buscando conceptos que se suelen olvidar (desecho, flete, permisos, equipo, inspección...).", "Pricing": "Precios", "Contingency %": "Contingencia %", "Minimum margin floor %": "Margen mínimo %", "Lock contingency": "Bloquear contingencia", "Currency": "Moneda", "Tax": "Impuesto", "Locked (change-order cushion)": "Bloqueada (colchón para cambios)", "Unlocked": "Desbloqueada", "No tax line": "Sin impuesto", "Bid breakdown": "Desglose del presupuesto", "Direct cost": "Costo directo", "Contingency": "Contingencia", "Markup": "Margen de ganancia", "Profit": "Utilidad", "Margin": "Margen", "Copy bid summary": "Copiar resumen", "Recurring & one-time": "Recurrentes y únicos", "Monthly recurring (MRC)": "Mensual recurrente (MRC)", "One-time total (NRC)": "Total único (NRC)", "First-year total": "Total primer año", "Bid total": "Total del presupuesto", "Total ex GST": "Total sin GST", "Final total inc. GST": "Total con GST", "Total contract value": "Valor total del contrato", "Missing:": "Falta:", "Add line": "Agregar partida", "No common items missing. Looks complete.": "No faltan conceptos comunes. Se ve completo.", "Checking...": "Revisando...", "+ Labor line": "+ Agregar partida (mano de obra)", "+ Labour line": "+ Agregar partida (mano de obra)", "Disposal / haul-off / dump fees": "Desecho / retiro de escombro", "Material delivery": "Flete de materiales", "Equipment rental (skid steer, compactor, scissor lift)": "Renta de equipo (minicargador, compactadora, plataforma)", "Permits / council or city approval": "Permisos / licencia municipal", "Inspection, testing and compliance certificate": "Inspección, pruebas y certificado", "Drainage (drain rock, pipe, fabric) behind retaining wall": "Drenaje detrás del muro de contención", "Switchboard upgrade / capacity check": "Actualización de tablero eléctrico", "Change-order / owner-allowance cushion": "Colchón para órdenes de cambio", "Infection control (ICRA) barriers for healthcare work": "Barreras de control de infecciones (ICRA)", "Crane / hoist rental to lift rooftop equipment (grua)": "Renta de grúa / polipasto para subir equipos al techo", "Startup / commissioning (arranque)": "Arranque y puesta en marcha", "Site cleanup / restoration": "Limpieza final de obra", "Travel / mobilization": "Traslado / movilización"};
+let LANG="en";
+function tr(s){return LANG==="es"&&ES[s]||s}
+function setLang(l){LANG=l==="es"?"es":"en";document.documentElement.lang=LANG;
+  document.querySelectorAll("[data-i18n]").forEach(e=>{const v=tr(e.dataset.i18n);if(e.textContent!==v)e.textContent=v});
+  $("langEn").setAttribute("aria-pressed",String(LANG==="en"));$("langEs").setAttribute("aria-pressed",String(LANG==="es"));
+  $("flags").innerHTML="";calc();}
 let mats=[],labs=[],rcs=[],ots=[],cos=[];
 function ov(v){return v===undefined||v===null||String(v).trim()===""?null:num(v)}
 
 function fmt(n){const c=$("cur").value;return (c==="USD"?"$":c+" $")+n.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}
-function labWord(){return ["AUD","NZD"].includes($("cur").value)?"Labour":"Labor"}
+function labWord(){return LANG==="es"?"Mano de obra":["AUD","NZD"].includes($("cur").value)?"Labour":"Labor"}
 function num(v){const n=parseFloat(v);return isFinite(n)?n:0}
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
 
@@ -295,10 +304,10 @@ function calc(){
   const margin=sub>0?profit/sub*100:0;
   $("sMat").textContent=fmt(mat);$("sLab").textContent=fmt(lab);$("sDirect").textContent=fmt(direct);
   $("sCont").textContent=fmt(cont)+` (${num($("cont").value)}%)`;
-  $("sMark").textContent=fmt(mark)+(overridden?` (blended ${(direct+cont>0?mark/(direct+cont)*100:0).toFixed(1)}%)`:` (${num($("markup").value)}%)`);
+  $("sMark").textContent=fmt(mark)+(overridden?` (${LANG==="es"?"promedio":"blended"} ${(direct+cont>0?mark/(direct+cont)*100:0).toFixed(1)}%)`:` (${num($("markup").value)}%)`);
   $("coRow").style.display=cos.length?"flex":"none";$("sCO").textContent=fmt(coCost+coMark);$("sCOd").textContent=`(cost ${fmt(coCost)} + markup ${fmt(coMark)})`;
-  $("gstRow").style.display=g?"flex":"none";$("exRow").style.display=g?"flex":"none";$("sEx").textContent=fmt(sub);const iva=$("gst").value==="16";$("exLabel").textContent=iva?"Total sin IVA":"Total ex GST";$("gstLabel").textContent=iva?`IVA ${g}%`:`GST ${g}%`;$("sGst").textContent=fmt(gst);
-  $("totalLabel").textContent=g?(iva?"Total con IVA":"Final total inc. GST"):"Bid total";
+  $("gstRow").style.display=g?"flex":"none";$("exRow").style.display=g?"flex":"none";$("sEx").textContent=fmt(sub);const iva=$("gst").value==="16";$("exLabel").textContent=iva?"Total sin IVA":tr("Total ex GST");$("gstLabel").textContent=iva?`IVA ${g}%`:`GST ${g}%`;$("sGst").textContent=fmt(gst);
+  $("totalLabel").textContent=g?(iva?"Total con IVA":tr("Final total inc. GST")):tr("Bid total");
   $("sTotal").textContent=fmt(total);$("sProfit").textContent=fmt(profit);
   $("sMargin").textContent=margin.toFixed(1)+"%";
   $("mBar").style.width=Math.max(0,Math.min(100,margin*2.5))+"%";
@@ -306,14 +315,16 @@ function calc(){
   // markup % needed so that markup/(cost+contingency+markup) = floor
   const need=floor<100?(floor/(100-floor))*100:0;
   const below=sub>0&&margin+1e-9<floor;
-  $("marginWarn").innerHTML=below?`<strong>BELOW YOUR ${floor}% FLOOR. Do not send.</strong> Raise markup to at least ${need.toFixed(1)}% to hit the floor.`:"";
+  $("marginWarn").innerHTML=!below?"":LANG==="es"?`<strong>POR DEBAJO DE SU MARGEN MÍNIMO DE ${floor}%. No enviar.</strong> Suba el margen de ganancia a por lo menos ${need.toFixed(1)}% para alcanzarlo.`
+    :`<strong>BELOW YOUR ${floor}% FLOOR. Do not send.</strong> Raise markup to at least ${need.toFixed(1)}% to hit the floor.`;
   $("summary").style.outline=below?"3px solid var(--warn)":"none";$("summary").style.background=below?"#fbefe9":"";$("sMargin").style.color=below?"var(--warn)":"";
   $("cont").disabled=$("lockCont").value==="1";
   const LW=labWord();document.querySelectorAll(".lw").forEach(e=>{if(e.textContent!==LW)e.textContent=LW});
+  $("addLab").textContent=tr(`+ ${LW} line`);
   $("auGst").setAttribute("aria-pressed",String(g===10&&$("cur").value==="AUD"));
   const aL=num($("aLen").value),aW=num($("aWid").value),aP=num($("aPrice").value),aA=aL*aW;
   const cN=num($("cdPeople").value),cD=num($("cdDays").value),cH=num($("cdHours").value),cR=num($("cdRate").value),cT=cN*cD*cH;
-  $("cdOut").textContent=`${cN} people x ${cD} days x ${cH} h = ${cT.toLocaleString()} h x ${fmt(cR)}/h = ${fmt(cT*cR)}`;
+  $("cdOut").textContent=LANG==="es"?`${cN} personas x ${cD} días x ${cH} h = ${cT.toLocaleString()} h x ${fmt(cR)}/h = ${fmt(cT*cR)}`:`${cN} people x ${cD} days x ${cH} h = ${cT.toLocaleString()} h x ${fmt(cR)}/h = ${fmt(cT*cR)}`;
   $("aOut").textContent=`${aL} ft x ${aW} ft = ${aA.toLocaleString()} sq ft x ${fmt(aP)}/sq ft = ${fmt(aA*aP)}`;
   let mrc=0,nrc=0;
   rcs.forEach((x,i)=>{const t=num(x[1])*num(x[2]);mrc+=t;const c=$("rt"+i);if(c)c.textContent=fmt(t)+" /mo"});
@@ -322,7 +333,7 @@ function calc(){
   const fy=mrc*fyM+nrc,tcv=mrc*term+nrc;
   $("rcSummary").style.display=(rcs.length||ots.length)?"block":"none";
   $("rcMrc").textContent=fmt(mrc);$("rcNrc").textContent=fmt(nrc);$("rcFy").textContent=fmt(fy);$("rcTcv").textContent=fmt(tcv);
-  $("rcFyMonths").textContent=fyM;$("rcTermOut").textContent=term;$("rcTcvLabel").textContent=`Total contract value (${term} mo)`;
+  $("rcFyMonths").textContent=fyM;$("rcTermOut").textContent=term;$("rcTcvLabel").textContent=`${tr("Total contract value")} (${term} ${LANG==="es"?"meses":"mo"})`;
   window.__rc={mrc,nrc,firstYear:fy,tcv,term};
   window.__bid={materials:mat,labor:lab,direct,contingency:cont,markup:mark,changeOrderCost:coCost,changeOrderMarkup:coMark,gst,total,profit,marginPct:margin,floorPct:floor,belowFloor:below};
 }
@@ -334,7 +345,7 @@ function load(p){
   cos=(P.cos||[]).map(r=>r.slice());rcs=(P.rcs||[]).map(r=>r.slice());ots=(P.ots||[]).map(r=>r.slice());$("rcTerm").value=P.term||36;
   if(P.client)$("client").value=P.client;
   $("markup").value=P.markup;$("cont").value=P.cont;$("cur").value=P.cur;$("gst").value=P.gst;
-  $("flags").innerHTML="";render();
+  $("flags").innerHTML="";if(p==="hvacmx")setLang("es");render();
 }
 
 document.addEventListener("input",e=>{
@@ -354,6 +365,7 @@ $("aAdd").onclick=()=>{const L=num($("aLen").value),W=num($("aWid").value);mats.
 $("addLab").onclick=()=>{labs.push(["",0,0]);render()};
 function crewLine(name,n,d,h,rate){return [`${name} (${n} people x ${d} days x ${h} h)`,n*d*h,rate]}
 $("cdAdd").onclick=()=>{labs.push(crewLine($("cdName").value.trim()||"Crew task",num($("cdPeople").value),num($("cdDays").value),num($("cdHours").value),num($("cdRate").value)));render();};
+$("langEn").onclick=()=>setLang("en");$("langEs").onclick=()=>setLang("es");
 $("addCo").onclick=()=>{cos.push(["Change order",0,""]);render()};
 $("addRc").onclick=()=>{rcs.push(["",1,0]);render()};
 $("addOt").onclick=()=>{ots.push(["",1,0]);render()};
@@ -368,10 +380,10 @@ function ruleCheck(){
   return out;
 }
 $("checkBtn").onclick=async()=>{
-  const box=$("flags");box.innerHTML='<p class="mute">Checking...</p>';
+  const box=$("flags");box.innerHTML=`<p class="mute">${tr("Checking...")}</p>`;
   const found=ruleCheck();
-  let html=found.length?found.map(f=>`<div class="flag">Missing: <strong>${esc(f.t)}</strong><button data-addrule="${f.i}">Add line</button></div>`).join("")
-    :'<div class="flag ok">No common items missing. Looks complete.</div>';
+  let html=found.length?found.map(f=>`<div class="flag">${tr("Missing:")} <strong>${esc(tr(f.t))}</strong><button data-addrule="${f.i}">${tr("Add line")}</button></div>`).join("")
+    :`<div class="flag ok">${tr("No common items missing. Looks complete.")}</div>`;
   box.innerHTML=html;
   // Optional AI review of free-text scope when available
   try{

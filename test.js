@@ -259,16 +259,19 @@ const startsWithMoney = (s, m) => s === m || s.startsWith(m + " ");
   eq(t.txt("marginWarn"), "", "HVAC template above floor");
   t.$("checkBtn").click();
   const f1 = t.txt("flags");
-  ok(!/Crane/.test(f1), "crane not flagged when crane line present");
-  ok(!/commissioning/i.test(f1), "startup not flagged when present");
+  ok(!/Crane|grúa/i.test(f1), "crane not flagged when crane line present");
+  ok(!/commissioning|Arranque/i.test(f1), "startup not flagged when present");
   // remove crane + startup lines -> both flagged
   t.d.querySelectorAll('#matTable [data-del="m"]')[2].click();
   t.d.querySelectorAll('#labTable [data-del="l"]')[2].click();
   t.$("desc").value = "4 rooftop units on techo, ductwork";
   t.$("checkBtn").click();
   const f2 = t.txt("flags");
-  ok(/Crane \/ hoist/.test(f2), "crane/hoist flagged for rooftop units");
-  ok(/Startup \/ commissioning \(arranque\)/.test(f2), "startup/commissioning flagged");
+  ok(/Renta de grúa \/ polipasto/.test(f2), "crane/hoist flagged for rooftop units (es)");
+  ok(/Arranque y puesta en marcha/.test(f2), "startup/commissioning flagged (es)");
+  t.$("langEn").click(); t.$("checkBtn").click();
+  ok(/Crane \/ hoist/.test(t.txt("flags")), "crane/hoist flagged (en)");
+  ok(/Startup \/ commissioning \(arranque\)/.test(t.txt("flags")), "startup/commissioning flagged (en)");
   // switching back keeps GST labels exact
   t.preset("electrical");
   eq(t.txt("exLabel"), "Total ex GST", "GST label after IVA");
@@ -278,6 +281,36 @@ const startsWithMoney = (s, m) => s === m || s.startsWith(m + " ");
   ok(!/Crane|commissioning/i.test(t.txt("flags")), "landscape check unaffected by HVAC rules");
   t.preset("solar"); t.$("checkBtn").click();
   ok(!/Crane|commissioning/i.test(t.txt("flags")), "solar check unaffected by HVAC rules");
+}
+
+// ---------- English | Espanol toggle ----------
+{
+  const t = boot();
+  const EN = ["Materials", "Direct cost", "Contingency", "Markup", "Profit", "Margin", "Bid total", "Minimum margin floor %", "Did I forget anything?"];
+  t.preset("landscape");
+  eq(t.$("langEn").getAttribute("aria-pressed"), "true", "English is default");
+  EN.forEach(w => ok(t.d.body.textContent.includes(w), `English label "${w}"`));
+  t.$("langEs").click();
+  const b = t.d.body.textContent;
+  ["Materiales", "Mano de obra", "Contingencia", "Margen de ganancia", "Utilidad", "¿Olvidé algo?", "Total del presupuesto", "+ Agregar partida", "Cuadrilla: personas x días x horas"].forEach(w => ok(b.includes(w), `Spanish label "${w}"`));
+  ok(t.d.querySelector("header").textContent.includes("Ship Warp Sorcery") && t.d.querySelector("footer").textContent.includes("Ship Warp Sorcery"), "team name stays in Spanish");
+  eq(t.txt("sTotal"), "$12,772.32", "numbers unchanged in Spanish");
+  t.set("markup", "10");
+  ok(/No enviar/.test(t.txt("marginWarn")), "Spanish margin warning");
+  t.set("markup", "20");
+  eq(t.txt("marginWarn"), "", "Spanish warning clears");
+  t.$("checkBtn").click();
+  ok(/Falta:/.test(t.txt("flags")), "Spanish missing-line flags");
+  t.$("langEn").click();
+  EN.forEach(w => ok(t.d.body.textContent.includes(w), `English label "${w}" restored`));
+  ok(!t.d.querySelector("main").textContent.includes("Materiales"), "no Spanish left in English mode");
+  t.set("gst", "10");
+  eq(t.txt("exLabel"), "Total ex GST", "exact GST ex label after toggling back");
+  eq(t.txt("totalLabel"), "Final total inc. GST", "exact GST total label after toggling back");
+  t.preset("hvacmx");
+  eq(t.$("langEs").getAttribute("aria-pressed"), "true", "HVAC MX template switches to Espanol");
+  eq(t.txt("exLabel"), "Total sin IVA", "IVA ex label in Spanish");
+  eq(t.txt("totalLabel"), "Total con IVA", "IVA total label in Spanish");
 }
 
 // @@NEXT@@
