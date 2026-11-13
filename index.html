@@ -253,10 +253,10 @@ const PRESETS={
 const RULES=[
   {k:"disposal",t:"Disposal / haul-off / dump fees",match:/dispos|haul|dump|skip bin|waste|tip fee/i,when:/tear|remov|demo|excavat|old|strip|lawn|patio|wall|landscap|renovat/i,add:["Disposal / haul-off (dump fees + truck)",1,"lot",450]},
   {k:"delivery",t:"Material delivery",match:/deliver|freight|trucking/i,when:/gravel|ton|paver|block|stone|panel|sand|bulk/i,add:["Material delivery",1,"lot",250]},
-  {k:"equip",t:"Equipment rental (skid steer, compactor, scissor lift)",match:/rental|skid|compactor|plate|excavator|hire|lift/i,when:/compact|excavat|wall|patio|base|roof|lift/i,add:["Equipment rental (compactor / skid steer)",2,"day",275]},
+  {k:"equip",t:"Equipment rental (skid steer, compactor, scissor lift)",match:/rental|skid|compactor|plate|excavator|hire|lift/i,when:/compact|excavat|retaining|patio|base|roof|lift/i,add:["Equipment rental (compactor / skid steer)",2,"day",275]},
   {k:"permit",t:"Permits / council or city approval",match:/permit|council|approval|licen[cs]e fee/i,when:/wall|retaining|electric|circuit|solar|board|fit-out|structural/i,add:["Permit / approval fees",1,"lot",300]},
   {k:"inspect",t:"Inspection, testing and compliance certificate",match:/inspect|test|certif|compliance|coc/i,when:/electric|circuit|board|solar|battery|gpo/i,add:["Testing + compliance certificate",1,"lot",250]},
-  {k:"drain",t:"Drainage (drain rock, pipe, fabric) behind retaining wall",match:/drain|fabric|geotext|perforated/i,when:/retaining|wall/i,add:["Drain rock + perforated pipe + fabric",1,"lot",380]},
+  {k:"drain",t:"Drainage (drain rock, pipe, fabric) behind retaining wall",match:/drain|fabric|geotext|perforated/i,when:/retaining/i,add:["Drain rock + perforated pipe + fabric",1,"lot",380]},
   {k:"board",t:"Switchboard upgrade / capacity check",match:/switchboard|board upgrade|panel upgrade|main panel/i,when:/solar|battery|circuit|fit-out/i,add:["Switchboard upgrade allowance",1,"lot",900]},
   {k:"co",t:"Change-order / owner-allowance cushion",match:/change.?order|allowance|escalat/i,when:/fit-?out|clinic|healthcare|commercial|tenant|office|retail/i,add:["Change-order allowance",1,"lot",5000]},
   {k:"icra",t:"Infection control (ICRA) barriers for healthcare work",match:/icra|infection|dust barrier|negative air/i,when:/clinic|healthcare|hospital|medical|occupied/i,add:["ICRA dust barriers + negative air",1,"lot",3200]},
@@ -454,10 +454,10 @@ function ruleCheck(){
 // BidBench AI Worker (Cloudflare Workers AI; the model runs server-side, no key in this page). Answers in about half a second.
 const AI_URL="https://bidbench.pubandsubs.workers.dev/api/review";
 const AI_TIMEOUT_MS=5000;
-async function aiReview(){
+async function aiReview(flagged=[]){
   const scope=[$("job").value,$("desc").value].map(s=>s.trim()).filter(Boolean).join(". ").slice(0,2000);
   if(!scope)return{ok:false,error:tr("add scope notes first")};
-  const lines=mats.map(m=>m[0]).concat(labs.map(l=>l[0]),cos.map(c=>c[0])).map(s=>String(s).trim()).filter(Boolean).slice(0,60);
+  const lines=mats.map(m=>m[0]).concat(labs.map(l=>l[0]),cos.map(c=>c[0]),flagged).map(s=>String(s).trim()).filter(Boolean).slice(0,60);
   const ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),AI_TIMEOUT_MS);
   try{
     const res=await fetch(AI_URL,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({scope,lines}),signal:ctrl.signal});
@@ -476,7 +476,7 @@ $("checkBtn").onclick=async()=>{
   box.innerHTML=html;
   // Real AI review of the free-text scope; the keyword checks above always show.
   const aiNote=document.createElement("p");aiNote.className="mute";aiNote.textContent=tr("AI is reading your scope notes...");box.append(aiNote);
-  const ai=await aiReview();
+  const ai=await aiReview(found.map(f=>f.t));
   if(!ai.ok){aiNote.textContent=`${tr("AI review unavailable")} (${ai.error}). ${tr("The keyword checks above still apply.")}`;return;}
   aiNote.remove();
   box.insertAdjacentHTML("beforeend",ai.missing.length

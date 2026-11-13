@@ -78,11 +78,21 @@ async function aiTests() {
     eq(calls[0] && calls[0].url, AI_URL, "AI worker URL");
     ok(calls[0] && calls[0].body.scope.includes("paver patio"), "scope notes are sent to the AI");
     ok(calls[0] && calls[0].body.lines.includes("Pavers"), "bid lines are sent to the AI");
+    ok(calls[0] && calls[0].body.lines.some((l) => /Disposal/.test(l)), "keyword findings are sent so the AI doesn't repeat them");
     const aiFlag = [...t.d.querySelectorAll("#flags .flag")].find((f) => f.textContent.includes("Permit fees"));
     ok(!!aiFlag, "AI suggestion is shown");
     const before = t.d.querySelectorAll("#matTable tbody tr").length;
     if (aiFlag) aiFlag.querySelector("button").click();
     eq(t.d.querySelectorAll("#matTable tbody tr").length, before + 1, "Add line adds the AI suggestion as a material line");
+  }
+  { // a bathroom's "far wall" doesn't trigger retaining-wall drainage or a skid steer
+    const t = boot(async () => ({ ok: true, status: 200, json: async () => ({ ok: true, data: { missing: [] }, error: null }) }));
+    t.preset("blank");
+    t.set("desc", "Gut the hall bath to the studs, curbless walk-in shower, swap the loo to the far wall, heated floor.");
+    await t.$("checkBtn").onclick();
+    const flags = t.txt("flags");
+    ok(!/retaining wall/i.test(flags), "no retaining-wall drainage flag for a bathroom");
+    ok(!/skid steer/i.test(flags), "no skid steer flag for a bathroom");
   }
   { // AI down: keyword checks still show, with a visible note
     const t = boot(async () => { throw new TypeError("Failed to fetch"); });
