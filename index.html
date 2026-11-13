@@ -59,6 +59,7 @@
       <textarea id="desc">Tear out old lawn, 400 sq ft paver patio, 40 ft block retaining wall, base gravel, compact.</textarea></div>
     <div class="actions">
       <label class="mute" style="margin:0;align-self:center">Start from:</label>
+      <button data-preset="fitout">Commercial fit-out</button>
       <button data-preset="landscape">Landscape / hardscape</button>
       <button data-preset="electrical">Electrical fit-out</button>
       <button data-preset="solar">Solar + battery</button>
@@ -92,6 +93,8 @@
     <div class="row2">
       <div><label for="markup">Markup %</label><input id="markup" type="number" step="0.5" value="20"></div>
       <div><label for="cont">Contingency %</label><input id="cont" type="number" step="0.5" value="10"></div>
+      <div><label for="floor">Minimum margin floor %</label><input id="floor" type="number" step="0.5" value="12"></div>
+      <div><label for="lockCont">Lock contingency</label><select id="lockCont"><option value="1">Locked (change-order cushion)</option><option value="0">Unlocked</option></select></div>
       <div><label for="cur">Currency</label>
         <select id="cur"><option value="USD">USD $</option><option value="AUD">AUD $</option><option value="NZD">NZD $</option><option value="CAD">CAD $</option></select></div>
       <div><label for="gst">Tax</label>
@@ -132,6 +135,9 @@ const PRESETS={
   solar:{job:"6.6kW solar + 10kWh battery",desc:"Residential rooftop solar 6.6kW with inverter and 10kWh battery, tile roof.",
     mats:[["Solar panels 440W",15,"ea",210],["Hybrid inverter",1,"ea",2400],["Battery 10kWh",1,"ea",7800],["Mounting rails + clamps",1,"lot",650],["DC isolators + cabling",1,"lot",380]],
     labs:[["Installer (licensed)",16,95],["Roof hand",16,55]],markup:15,cont:7,cur:"AUD",gst:"10"},
+  fitout:{job:"Healthcare clinic tenant fit-out",desc:"4,000 sq ft clinic fit-out: framing, drywall, ceilings, doors, finish carpentry, flooring, paint. Occupied building.",
+    mats:[["Metal studs + track",4000,"sq ft",1.35],["Drywall + finishing",9000,"sq ft",0.95],["Acoustic ceiling grid + tile",4000,"sq ft",3.2],["Doors, frames + hardware",14,"ea",1150],["Flooring (LVT + sheet vinyl)",4000,"sq ft",5.5],["Paint",9000,"sq ft",0.45]],
+    labs:[["Framing crew",320,68],["Drywall crew",360,62],["Finish carpentry",160,72],["Project supervision",120,85]],markup:12,cont:8,cur:"USD",gst:"0"},
   blank:{job:"",desc:"",mats:[["",1,"ea",0]],labs:[["",0,0]],markup:20,cont:10,cur:"USD",gst:"0"}
 };
 const RULES=[
@@ -142,6 +148,8 @@ const RULES=[
   {k:"inspect",t:"Inspection, testing and compliance certificate",match:/inspect|test|certif|compliance|coc/i,when:/electric|circuit|board|solar|battery|gpo/i,add:["Testing + compliance certificate",1,"lot",250]},
   {k:"drain",t:"Drainage (drain rock, pipe, fabric) behind retaining wall",match:/drain|fabric|geotext|perforated/i,when:/retaining|wall/i,add:["Drain rock + perforated pipe + fabric",1,"lot",380]},
   {k:"board",t:"Switchboard upgrade / capacity check",match:/switchboard|board upgrade|panel upgrade|main panel/i,when:/solar|battery|circuit|fit-out/i,add:["Switchboard upgrade allowance",1,"lot",900]},
+  {k:"co",t:"Change-order / owner-allowance cushion",match:/change.?order|allowance|escalat/i,when:/fit-?out|clinic|healthcare|commercial|tenant|office|retail/i,add:["Change-order allowance",1,"lot",5000]},
+  {k:"icra",t:"Infection control (ICRA) barriers for healthcare work",match:/icra|infection|dust barrier|negative air/i,when:/clinic|healthcare|hospital|medical|occupied/i,add:["ICRA dust barriers + negative air",1,"lot",3200]},
   {k:"cleanup",t:"Site cleanup / restoration",match:/clean|restor|make good|sod repair/i,when:/./,addLab:["Site cleanup / make good",4,55]},
   {k:"travel",t:"Travel / mobilization",match:/travel|mobili|call-?out/i,when:/./,addLab:["Travel / mobilization",2,60]}
 ];
@@ -192,8 +200,14 @@ function calc(){
   $("sTotal").textContent=fmt(total);$("sProfit").textContent=fmt(profit);
   $("sMargin").textContent=margin.toFixed(1)+"%";
   $("mBar").style.width=Math.max(0,Math.min(100,margin*2.5))+"%";
-  $("marginWarn").textContent=margin<10&&sub>0?"Margin under 10%. Check your markup before sending.":"";
-  window.__bid={materials:mat,labor:lab,direct,contingency:cont,markup:mark,gst,total,profit,marginPct:margin};
+  const floor=num($("floor").value);
+  // markup % needed so that markup/(cost+contingency+markup) = floor
+  const need=floor<100?(floor/(100-floor))*100:0;
+  const below=sub>0&&margin+1e-9<floor;
+  $("marginWarn").innerHTML=below?`<strong>BELOW YOUR ${floor}% FLOOR. Do not send.</strong> Raise markup to at least ${need.toFixed(1)}% to hit the floor.`:(sub>0?`<span style="color:var(--ok)">Above your ${floor}% floor.</span>`:"");
+  $("summary").style.outline=below?"3px solid var(--warn)":"none";
+  $("cont").disabled=$("lockCont").value==="1";
+  window.__bid={materials:mat,labor:lab,direct,contingency:cont,markup:mark,gst,total,profit,marginPct:margin,floorPct:floor,belowFloor:below};
 }
 
 function load(p){
@@ -207,9 +221,9 @@ function load(p){
 document.addEventListener("input",e=>{
   const t=e.target;if(t.dataset.t){const arr=t.dataset.t==="m"?mats:labs;const f=+t.dataset.f;
     arr[+t.dataset.i][f]=(t.type==="number")?t.value:t.value;calc();}
-  else if(["markup","cont","cur","gst"].includes(t.id))calc();
+  else if(["markup","cont","cur","gst","floor"].includes(t.id))calc();
 });
-document.addEventListener("change",e=>{if(["cur","gst"].includes(e.target.id))calc()});
+document.addEventListener("change",e=>{if(["cur","gst","lockCont"].includes(e.target.id))calc()});
 document.addEventListener("click",e=>{
   const t=e.target;
   if(t.dataset.preset)load(t.dataset.preset);
