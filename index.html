@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BidBench by Ship Warp Sorcery</title>
+<style>
+  :root{--bg:#f6f5f1;--card:#fff;--ink:#1d1d1b;--mute:#6b6a64;--line:#e3e1da;--acc:#1f6f50;--warn:#b5481d;--ok:#1f6f50}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--ink)}
+  header{background:var(--ink);color:#fff;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  header h1{font-size:20px;margin:0}
+  header span{color:#bdbcb5;font-size:13px}
+  main{max-width:1100px;margin:0 auto;padding:18px;display:grid;grid-template-columns:1fr 340px;gap:18px}
+  @media(max-width:900px){main{grid-template-columns:1fr}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:16px}
+  h2{font-size:15px;margin:0 0 10px;text-transform:uppercase;letter-spacing:.04em;color:var(--mute)}
+  label{font-size:12px;color:var(--mute);display:block;margin-bottom:3px}
+  input,select,textarea{font:inherit;padding:7px 8px;border:1px solid var(--line);border-radius:6px;width:100%;background:#fff}
+  textarea{min-height:64px;resize:vertical}
+  table{width:100%;border-collapse:collapse}
+  th{font-size:12px;color:var(--mute);text-align:left;font-weight:600;padding:4px}
+  td{padding:4px}
+  td.num,th.num{text-align:right;white-space:nowrap}
+  button{font:inherit;cursor:pointer;border-radius:6px;border:1px solid var(--line);background:#fff;padding:7px 12px}
+  button.primary{background:var(--acc);color:#fff;border-color:var(--acc)}
+  button.x{border:none;background:none;color:var(--mute);font-size:18px;padding:0 6px}
+  .row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .sum div{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed var(--line)}
+  .sum .total{font-size:20px;font-weight:700;border-bottom:none;padding-top:10px}
+  .sum .profit{color:var(--ok);font-weight:600}
+  .bar{height:10px;background:var(--line);border-radius:5px;overflow:hidden;margin-top:4px}
+  .bar i{display:block;height:100%;background:var(--acc)}
+  .flag{padding:8px 10px;border-radius:6px;margin:6px 0;font-size:14px;border-left:4px solid var(--warn);background:#fbefe9}
+  .flag.ok{border-color:var(--ok);background:#e9f5ef}
+  .flag button{margin-left:8px;padding:2px 8px;font-size:12px}
+  .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .mute{color:var(--mute);font-size:13px}
+  footer{text-align:center;padding:20px;color:var(--mute);font-size:13px}
+  #marginWarn{font-size:13px;color:var(--warn);margin-top:6px}
+</style>
+</head>
+<body>
+<header>
+  <div><h1>BidBench</h1><span>Itemized contractor bids. See your margin before it goes out the door.</span></div>
+  <span>Team: <strong style="color:#fff">Ship Warp Sorcery</strong></span>
+</header>
+
+<main>
+<section>
+  <div class="card">
+    <h2>Job</h2>
+    <div class="row2">
+      <div><label for="job">Job name</label><input id="job" value="Backyard paver patio + retaining wall"></div>
+      <div><label for="client">Client</label><input id="client" value="Homeowner"></div>
+    </div>
+    <div style="margin-top:10px"><label for="desc">Scope notes (in your own words)</label>
+      <textarea id="desc">Tear out old lawn, 400 sq ft paver patio, 40 ft block retaining wall, base gravel, compact.</textarea></div>
+    <div class="actions">
+      <label class="mute" style="margin:0;align-self:center">Start from:</label>
+      <button data-preset="landscape">Landscape / hardscape</button>
+      <button data-preset="electrical">Electrical fit-out</button>
+      <button data-preset="solar">Solar + battery</button>
+      <button data-preset="blank">Blank</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Materials</h2>
+    <table id="matTable"><thead><tr><th>Item</th><th class="num">Qty</th><th>Unit</th><th class="num">Unit cost</th><th class="num">Line total</th><th></th></tr></thead><tbody></tbody></table>
+    <div class="actions"><button id="addMat">+ Material line</button></div>
+  </div>
+
+  <div class="card">
+    <h2>Labor</h2>
+    <table id="labTable"><thead><tr><th>Crew / task</th><th class="num">Hours</th><th class="num">Rate / hr</th><th class="num">Line total</th><th></th></tr></thead><tbody></tbody></table>
+    <div class="actions"><button id="addLab">+ Labor line</button></div>
+  </div>
+
+  <div class="card">
+    <h2>Did I forget anything?</h2>
+    <p class="mute" style="margin-top:0">Checks your scope notes and lines for items contractors commonly miss (disposal, delivery, permits, equipment, inspection...).</p>
+    <button class="primary" id="checkBtn">Check for missing lines</button>
+    <div id="flags"></div>
+  </div>
+</section>
+
+<aside>
+  <div class="card">
+    <h2>Pricing</h2>
+    <div class="row2">
+      <div><label for="markup">Markup %</label><input id="markup" type="number" step="0.5" value="20"></div>
+      <div><label for="cont">Contingency %</label><input id="cont" type="number" step="0.5" value="10"></div>
+      <div><label for="cur">Currency</label>
+        <select id="cur"><option value="USD">USD $</option><option value="AUD">AUD $</option><option value="NZD">NZD $</option><option value="CAD">CAD $</option></select></div>
+      <div><label for="gst">Tax</label>
+        <select id="gst"><option value="0">No tax line</option><option value="10">GST 10% (AU)</option><option value="15">GST 15% (NZ)</option></select></div>
+    </div>
+  </div>
+
+  <div class="card sum" id="summary">
+    <h2>Bid breakdown</h2>
+    <div><span>Materials</span><span id="sMat"></span></div>
+    <div><span>Labor</span><span id="sLab"></span></div>
+    <div><span>Direct cost</span><span id="sDirect"></span></div>
+    <div><span>Contingency</span><span id="sCont"></span></div>
+    <div><span>Markup</span><span id="sMark"></span></div>
+    <div id="gstRow"><span id="gstLabel">GST</span><span id="sGst"></span></div>
+    <div class="total"><span id="totalLabel">Bid total</span><span id="sTotal"></span></div>
+    <div class="profit"><span>Profit</span><span id="sProfit"></span></div>
+    <div style="display:block;border:none"><span>Margin</span> <strong id="sMargin" style="float:right"></strong>
+      <div class="bar"><i id="mBar"></i></div>
+      <div id="marginWarn"></div>
+    </div>
+    <div class="actions"><button id="copyBtn">Copy bid summary</button></div>
+    <p class="mute" id="copied"></p>
+  </div>
+</aside>
+</main>
+
+<footer>BidBench &middot; built by team <strong>Ship Warp Sorcery</strong></footer>
+
+<script>
+const PRESETS={
+  landscape:{job:"Backyard paver patio + retaining wall",desc:"Tear out old lawn, 400 sq ft paver patio, 40 ft block retaining wall, base gravel, compact.",
+    mats:[["Pavers",400,"sq ft",4.5],["Base gravel",12,"ton",38],["Bedding sand",4,"ton",45],["Wall block",160,"ea",6.25],["Cap stone",40,"lin ft",9]],
+    labs:[["Excavation / tear-out crew",24,65],["Paver install crew",40,60],["Wall build crew",32,60]],markup:20,cont:10,cur:"USD",gst:"0"},
+  electrical:{job:"Office fit-out electrical",desc:"Commercial fit-out, 12 downlights, 20 GPOs, new circuits to existing board, data points.",
+    mats:[["LED downlights",12,"ea",38],["Double GPOs",20,"ea",22],["TPS cable 2.5mm",300,"m",1.9],["Conduit + fittings",1,"lot",420],["Circuit breakers / RCBOs",6,"ea",65]],
+    labs:[["Electrician",48,95],["Apprentice",48,45]],markup:18,cont:8,cur:"AUD",gst:"10"},
+  solar:{job:"6.6kW solar + 10kWh battery",desc:"Residential rooftop solar 6.6kW with inverter and 10kWh battery, tile roof.",
+    mats:[["Solar panels 440W",15,"ea",210],["Hybrid inverter",1,"ea",2400],["Battery 10kWh",1,"ea",7800],["Mounting rails + clamps",1,"lot",650],["DC isolators + cabling",1,"lot",380]],
+    labs:[["Installer (licensed)",16,95],["Roof hand",16,55]],markup:15,cont:7,cur:"AUD",gst:"10"},
+  blank:{job:"",desc:"",mats:[["",1,"ea",0]],labs:[["",0,0]],markup:20,cont:10,cur:"USD",gst:"0"}
+};
+const RULES=[
+  {k:"disposal",t:"Disposal / haul-off / dump fees",match:/dispos|haul|dump|skip bin|waste|tip fee/i,when:/tear|remov|demo|excavat|old|strip|lawn|patio|wall|landscap|renovat/i,add:["Disposal / haul-off (dump fees + truck)",1,"lot",450]},
+  {k:"delivery",t:"Material delivery",match:/deliver|freight|trucking/i,when:/gravel|ton|paver|block|stone|panel|sand|bulk/i,add:["Material delivery",1,"lot",250]},
+  {k:"equip",t:"Equipment rental (skid steer, compactor, scissor lift)",match:/rental|skid|compactor|plate|excavator|hire|lift/i,when:/compact|excavat|wall|patio|base|roof|lift/i,add:["Equipment rental (compactor / skid steer)",2,"day",275]},
+  {k:"permit",t:"Permits / council or city approval",match:/permit|council|approval|licen[cs]e fee/i,when:/wall|retaining|electric|circuit|solar|board|fit-out|structural/i,add:["Permit / approval fees",1,"lot",300]},
+  {k:"inspect",t:"Inspection, testing and compliance certificate",match:/inspect|test|certif|compliance|coc/i,when:/electric|circuit|board|solar|battery|gpo/i,add:["Testing + compliance certificate",1,"lot",250]},
+  {k:"drain",t:"Drainage (drain rock, pipe, fabric) behind retaining wall",match:/drain|fabric|geotext|perforated/i,when:/retaining|wall/i,add:["Drain rock + perforated pipe + fabric",1,"lot",380]},
+  {k:"board",t:"Switchboard upgrade / capacity check",match:/switchboard|board upgrade|panel upgrade|main panel/i,when:/solar|battery|circuit|fit-out/i,add:["Switchboard upgrade allowance",1,"lot",900]},
+  {k:"cleanup",t:"Site cleanup / restoration",match:/clean|restor|make good|sod repair/i,when:/./,addLab:["Site cleanup / make good",4,55]},
+  {k:"travel",t:"Travel / mobilization",match:/travel|mobili|call-?out/i,when:/./,addLab:["Travel / mobilization",2,60]}
+];
+const $=id=>document.getElementById(id);
+let mats=[],labs=[];
+
+function fmt(n){const c=$("cur").value;return (c==="USD"?"$":c+" $")+n.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}
+function num(v){const n=parseFloat(v);return isFinite(n)?n:0}
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+
+function render(){
+  const mb=$("matTable").querySelector("tbody");
+  mb.innerHTML=mats.map((m,i)=>`<tr>
+    <td><input aria-label="Material item" value="${esc(m[0])}" data-t="m" data-i="${i}" data-f="0"></td>
+    <td class="num"><input aria-label="Quantity" type="number" step="any" style="width:80px" value="${m[1]}" data-t="m" data-i="${i}" data-f="1"></td>
+    <td><input aria-label="Unit" style="width:70px" value="${esc(m[2])}" data-t="m" data-i="${i}" data-f="2"></td>
+    <td class="num"><input aria-label="Unit cost" type="number" step="any" style="width:90px" value="${m[3]}" data-t="m" data-i="${i}" data-f="3"></td>
+    <td class="num" id="mt${i}"></td>
+    <td><button class="x" title="Remove line" data-del="m" data-i="${i}">&times;</button></td></tr>`).join("");
+  const lb=$("labTable").querySelector("tbody");
+  lb.innerHTML=labs.map((l,i)=>`<tr>
+    <td><input aria-label="Labor task" value="${esc(l[0])}" data-t="l" data-i="${i}" data-f="0"></td>
+    <td class="num"><input aria-label="Hours" type="number" step="any" style="width:80px" value="${l[1]}" data-t="l" data-i="${i}" data-f="1"></td>
+    <td class="num"><input aria-label="Rate per hour" type="number" step="any" style="width:90px" value="${l[2]}" data-t="l" data-i="${i}" data-f="2"></td>
+    <td class="num" id="lt${i}"></td>
+    <td><button class="x" title="Remove line" data-del="l" data-i="${i}">&times;</button></td></tr>`).join("");
+  calc();
+}
+
+function calc(){
+  let mat=0,lab=0;
+  mats.forEach((m,i)=>{const t=num(m[1])*num(m[3]);mat+=t;const c=$("mt"+i);if(c)c.textContent=fmt(t)});
+  labs.forEach((l,i)=>{const t=num(l[1])*num(l[2]);lab+=t;const c=$("lt"+i);if(c)c.textContent=fmt(t)});
+  const direct=mat+lab;
+  const cont=direct*num($("cont").value)/100;
+  const mark=(direct+cont)*num($("markup").value)/100;
+  const sub=direct+cont+mark;
+  const g=num($("gst").value);
+  const gst=sub*g/100;
+  const total=sub+gst;
+  const profit=mark;
+  const margin=sub>0?profit/sub*100:0;
+  $("sMat").textContent=fmt(mat);$("sLab").textContent=fmt(lab);$("sDirect").textContent=fmt(direct);
+  $("sCont").textContent=fmt(cont)+` (${num($("cont").value)}%)`;
+  $("sMark").textContent=fmt(mark)+` (${num($("markup").value)}%)`;
+  $("gstRow").style.display=g?"flex":"none";$("gstLabel").textContent=`GST ${g}%`;$("sGst").textContent=fmt(gst);
+  $("totalLabel").textContent=g?"Bid total (GST incl.)":"Bid total";
+  $("sTotal").textContent=fmt(total);$("sProfit").textContent=fmt(profit);
+  $("sMargin").textContent=margin.toFixed(1)+"%";
+  $("mBar").style.width=Math.max(0,Math.min(100,margin*2.5))+"%";
+  $("marginWarn").textContent=margin<10&&sub>0?"Margin under 10%. Check your markup before sending.":"";
+  window.__bid={materials:mat,labor:lab,direct,contingency:cont,markup:mark,gst,total,profit,marginPct:margin};
+}
+
+function load(p){
+  const P=PRESETS[p];
+  $("job").value=P.job;$("desc").value=P.desc;
+  mats=P.mats.map(r=>r.slice());labs=P.labs.map(r=>r.slice());
+  $("markup").value=P.markup;$("cont").value=P.cont;$("cur").value=P.cur;$("gst").value=P.gst;
+  $("flags").innerHTML="";render();
+}
+
+document.addEventListener("input",e=>{
+  const t=e.target;if(t.dataset.t){const arr=t.dataset.t==="m"?mats:labs;const f=+t.dataset.f;
+    arr[+t.dataset.i][f]=(t.type==="number")?t.value:t.value;calc();}
+  else if(["markup","cont","cur","gst"].includes(t.id))calc();
+});
+document.addEventListener("change",e=>{if(["cur","gst"].includes(e.target.id))calc()});
+document.addEventListener("click",e=>{
+  const t=e.target;
+  if(t.dataset.preset)load(t.dataset.preset);
+  if(t.dataset.del){(t.dataset.del==="m"?mats:labs).splice(+t.dataset.i,1);render();}
+  if(t.dataset.addrule!==undefined){const r=RULES[+t.dataset.addrule];if(r.add)mats.push(r.add.slice());if(r.addLab)labs.push(r.addLab.slice());render();t.closest(".flag").remove();}
+});
+$("addMat").onclick=()=>{mats.push(["",1,"ea",0]);render()};
+$("addLab").onclick=()=>{labs.push(["",0,0]);render()};
+
+function ruleCheck(){
+  const scope=$("desc").value+" "+$("job").value;
+  const lines=mats.map(m=>m[0]).concat(labs.map(l=>l[0])).join(" | ")+" "+scope;
+  const out=[];
+  RULES.forEach((r,i)=>{if(r.when.test(scope+" "+lines)&&!r.match.test(lines))out.push({i,t:r.t})});
+  return out;
+}
+$("checkBtn").onclick=async()=>{
+  const box=$("flags");box.innerHTML='<p class="mute">Checking...</p>';
+  const found=ruleCheck();
+  let html=found.length?found.map(f=>`<div class="flag">Missing: <strong>${esc(f.t)}</strong><button data-addrule="${f.i}">Add line</button></div>`).join("")
+    :'<div class="flag ok">No common items missing. Looks complete.</div>';
+  box.innerHTML=html;
+  // Optional AI review of free-text scope when available
+  try{
+    if(window.claude&&claude.use){
+      const sample=await Promise.race([claude.use("sample"),new Promise(r=>setTimeout(()=>r(null),3000))]);
+      if(sample){
+        const prompt=`You are an experienced contractor estimator. Scope notes: "${$("desc").value}". Current bid lines: ${mats.map(m=>m[0]).concat(labs.map(l=>l[0])).filter(Boolean).join("; ")}. List up to 3 additional cost items likely missing from this bid that are NOT already listed. Reply as a JSON array of short strings only.`;
+        const r=await sample(prompt,{modelTier:"quick"});
+        let extra=[];try{extra=JSON.parse(r.text.match(/\[[\s\S]*\]/)[0])}catch(_){}
+        if(extra.length)box.innerHTML+=extra.map(x=>`<div class="flag">AI review: <strong>${esc(x)}</strong></div>`).join("");
+      }
+    }
+  }catch(_){}
+};
+
+$("copyBtn").onclick=()=>{
+  const b=window.__bid;
+  const txt=[`BID: ${$("job").value} for ${$("client").value}`,
+    ...mats.filter(m=>m[0]).map(m=>`  ${m[0]}: ${m[1]} ${m[2]} x ${fmt(num(m[3]))} = ${fmt(num(m[1])*num(m[3]))}`),
+    ...labs.filter(l=>l[0]).map(l=>`  ${l[0]}: ${l[1]} hrs x ${fmt(num(l[2]))} = ${fmt(num(l[1])*num(l[2]))}`),
+    `Materials ${fmt(b.materials)} | Labor ${fmt(b.labor)} | Contingency ${fmt(b.contingency)} | Markup ${fmt(b.markup)}`+(b.gst?` | GST ${fmt(b.gst)}`:""),
+    `TOTAL ${fmt(b.total)} | Profit ${fmt(b.profit)} | Margin ${b.marginPct.toFixed(1)}%`].join("\n");
+  (navigator.clipboard?navigator.clipboard.writeText(txt):Promise.reject()).then(()=>$("copied").textContent="Copied.").catch(()=>{$("copied").textContent="Copy failed; select and copy below.";$("copied").innerText=txt});
+};
+load("landscape");
+</script>
+</body>
+</html>
