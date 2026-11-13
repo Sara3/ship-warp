@@ -378,6 +378,21 @@ const startsWithMoney = (s, m) => s === m || s.startsWith(m + " ");
   eq(l2.querySelector('input[data-f="2"]').value, "sq ft", "default unit sq ft");
 }
 
+// ---------- P2: moving + storage template (Brennan & Daughters) ----------
+{
+  const t = boot();
+  t.preset("moving");
+  eq(t.$("cur").value, "USD", "moving USD"); eq(t.$("gst").value, "0", "moving no tax");
+  ok(startsWithMoney(t.txt("sMat"), "$2,005.00"), `moving materials incl. truck + storage months (got ${t.txt("sMat")})`);
+  ok(startsWithMoney(t.txt("sLab"), "$2,430.00"), `moving crew hours (got ${t.txt("sLab")})`);
+  ok([...t.d.querySelectorAll('#matTable input[data-f="2"]')].some(i => i.value === "month"), "storage priced per month");
+  eq(t.txt("marginWarn"), "", "moving template above floor");
+  t.$("checkBtn").click();
+  ok(/Valuation \/ moving insurance/.test(t.txt("flags")), "valuation coverage flagged for moves");
+  t.preset("landscape"); t.$("checkBtn").click();
+  ok(!/Valuation/.test(t.txt("flags")), "valuation not flagged for landscape");
+}
+
 // @@NEXT@@
 
 console.log(`${failures ? "FAILED" : "PASSED"}: ${passes} passed, ${failures} failed`);
