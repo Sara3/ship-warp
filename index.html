@@ -104,7 +104,7 @@
     <div class="row2">
       <div><label for="markup">Markup %</label><input id="markup" type="number" step="0.5" value="20"></div>
       <div><label for="cont">Contingency %</label><input id="cont" type="number" step="0.5" value="10"></div>
-      <div><label for="floor">Minimum margin floor %</label><input id="floor" type="number" step="0.5" value="12"></div>
+      <div><label for="floor">Minimum margin floor %</label><input id="floor" type="number" step="0.5" value="15"></div>
       <div><label for="lockCont">Lock contingency</label><select id="lockCont"><option value="1">Locked (change-order cushion)</option><option value="0">Unlocked</option></select></div>
       <div><label for="cur">Currency</label>
         <select id="cur"><option value="USD">USD $</option><option value="AUD">AUD $</option><option value="NZD">NZD $</option><option value="CAD">CAD $</option></select></div>
@@ -216,8 +216,8 @@ function calc(){
   // markup % needed so that markup/(cost+contingency+markup) = floor
   const need=floor<100?(floor/(100-floor))*100:0;
   const below=sub>0&&margin+1e-9<floor;
-  $("marginWarn").innerHTML=below?`<strong>BELOW YOUR ${floor}% FLOOR. Do not send.</strong> Raise markup to at least ${need.toFixed(1)}% to hit the floor.`:(sub>0?`<span style="color:var(--ok)">Above your ${floor}% floor.</span>`:"");
-  $("summary").style.outline=below?"3px solid var(--warn)":"none";
+  $("marginWarn").innerHTML=below?`<strong>BELOW YOUR ${floor}% FLOOR. Do not send.</strong> Raise markup to at least ${need.toFixed(1)}% to hit the floor.`:"";
+  $("summary").style.outline=below?"3px solid var(--warn)":"none";$("summary").style.background=below?"#fbefe9":"";$("sMargin").style.color=below?"var(--warn)":"";
   $("cont").disabled=$("lockCont").value==="1";
   const aL=num($("aLen").value),aW=num($("aWid").value),aP=num($("aPrice").value),aA=aL*aW;
   $("aOut").textContent=`${aL} ft x ${aW} ft = ${aA.toLocaleString()} sq ft x ${fmt(aP)}/sq ft = ${fmt(aA*aP)}`;
