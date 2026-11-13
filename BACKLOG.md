@@ -20,6 +20,7 @@ Prioritization rule: (1) don't break what a customer already reviewed, (2) unblo
 |---|------|----------------|--------|
 | [x] P0 | Regression test (`node test.js`, run `npm i` once) for calc math, GST, margin floor, sq-ft line | Basics are re-checked every review; a broken total loses all deals | S |
 | P0 | Real AI on free text: missing-line check reads scope notes with a small fast model behind a serverless function (key on server, keyword rules as fallback, <3s timeout) | Product brief requires real AI wherever free text is judged | M, needs API key + Vercel/Netlify (user) |
+| [x] TOP | Event venue (DK): DKK + "Moms 25% (DK)" tax, Guests input driving "per guest" lines, "Event venue (DK)" template, event checks (cloakroom, security, cleaning, AV technician, late-night licence/overtime, terrace heaters/weather backup) | Havnehallen Events (Copenhagen, up to $50K) | S |
 | [x] TOP | Recurring vs one-time charges card (term, MRC, one-time/NRC, first-year, total contract value) + "Enterprise telecom quote" template | Kallang Pacific Telecom (sells to banks/government) | S |
 | [x] P1+ | Frio Regio (Monterrey HVAC, MXN): crew-days labor builder, MXN + IVA 16% tax option, "HVAC industrial (MX)" template, crane/hoist + startup/commissioning checks, English/Espanol toggle | Frio Regio (48h tenders, rooftop install days underestimated) | S |
 | [x] P1 | Electrical/solar templates default to AUD + GST 10% (already), add a visible "AU: GST 10%" quick toggle next to the total; "labour" spelling when AUD/NZD | Liam (up to $45K) | S |

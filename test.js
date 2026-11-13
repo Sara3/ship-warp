@@ -441,6 +441,55 @@ const startsWithMoney = (s, m) => s === m || s.startsWith(m + " ");
   ok(/Linked/.test(t.txt("aLinkNote")), "linked note shown");
 }
 
+// ---------- Havnehallen Events: DKK + Moms 25%, guests, Event venue (DK) template, event checks ----------
+{
+  const t = boot();
+  t.preset("eventdk");
+  eq(t.$("cur").value, "DKK", "event DKK"); eq(t.$("gst").value, "25", "event Moms 25%"); eq(t.$("guests").value, "250", "event guests 250");
+  ok(startsWithMoney(t.txt("sMat"), "DKK 414,750.00"), `event materials (got ${t.txt("sMat")})`);
+  ok(startsWithMoney(t.txt("sLab"), "DKK 43,440.00"), `event labour (got ${t.txt("sLab")})`);
+  eq(t.txt("exLabel"), "Total ex moms", "Moms ex label");
+  eq(t.txt("sEx"), "DKK 577,319.40", "total ex moms");
+  eq(t.txt("gstLabel"), "Moms 25%", "Moms label");
+  eq(t.txt("sGst"), "DKK 144,329.85", "moms amount");
+  eq(t.txt("totalLabel"), "Total inkl. moms", "Total inkl. moms label");
+  eq(t.txt("sTotal"), "DKK 721,649.25", "total inkl. moms");
+  eq(t.txt("marginWarn"), "", "event template above floor");
+  // guests drive per-guest lines
+  t.set("guests", "300");
+  const perGuest = [...t.d.querySelectorAll("#matTable tbody tr")].filter(r => r.querySelector('input[data-f="2"]').value === "per guest");
+  eq(perGuest.length, 2, "two per-guest lines");
+  perGuest.forEach(r => eq(r.querySelector('input[data-f="1"]').value, "300", "per-guest qty follows guests"));
+  ok(startsWithMoney(t.txt("sMat"), "DKK 467,000.00"), `materials follow guests (got ${t.txt("sMat")})`);
+  t.set("guests", "");
+  ok(startsWithMoney(t.txt("sMat"), "DKK 467,000.00"), "clearing guests leaves lines alone");
+  // client bid uses moms labels
+  t.set("guests", "250"); t.$("clientBtn").click();
+  const c = t.txt("clientOut");
+  ok(c.includes("Total ex moms: DKK 577,319.40") && c.includes("Moms 25%: DKK 144,329.85") && c.includes("Total inkl. moms: DKK 721,649.25"), "client bid moms lines");
+  // event checks
+  t.$("checkBtn").click();
+  const f = t.txt("flags");
+  ["Cloakroom", "AV technician", "Late-night licence", "Terrace heaters"].forEach(w => ok(f.includes(w), `event check flags ${w}`));
+  ok(!/Security staff|Cleaning before/.test(f), "security + cleaning already covered");
+  ok(!/Site cleanup/.test(f), "no duplicate generic cleanup flag for events");
+  t.d.querySelectorAll('#labTable [data-del="l"]')[1].click(); // security
+  t.$("checkBtn").click();
+  ok(/Security staff for the event/.test(t.txt("flags")), "security flagged when removed");
+  // other templates unaffected
+  t.preset("landscape");
+  eq(t.$("guests").value, "", "guests empty by default");
+  t.$("checkBtn").click();
+  const lf = t.txt("flags");
+  ok(!/Cloakroom|AV technician|Late-night|Terrace heaters|Security staff/.test(lf), "landscape check unaffected by event rules");
+  ok(/Site cleanup/.test(lf), "generic cleanup still flagged for landscape");
+  t.set("gst", "10");
+  eq(t.txt("exLabel"), "Total ex GST", "GST ex label unchanged");
+  eq(t.txt("totalLabel"), "Final total inc. GST", "GST total label unchanged");
+  t.set("gst", "16");
+  eq(t.txt("totalLabel"), "Total con IVA", "IVA label unchanged");
+}
+
 // @@NEXT@@
 
 console.log(`${failures ? "FAILED" : "PASSED"}: ${passes} passed, ${failures} failed`);
