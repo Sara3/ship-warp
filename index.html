@@ -42,6 +42,11 @@
   header .chip{background:transparent;color:#fff;border-color:#6b6a64}
   .chip[aria-pressed="true"]{background:var(--acc);color:#fff;border-color:var(--acc)}
   #marginWarn{font-size:13px;color:var(--warn);margin-top:6px}
+  input:invalid{border-color:var(--warn);background:#fbefe9}
+  input:disabled{background:#efeee9;color:var(--mute)}
+  .card{overflow-x:auto}
+  #inputWarn{font-size:13px;color:var(--warn);margin:0 0 6px}
+  #inputWarn:empty{display:none}
 </style>
 </head>
 <body>
@@ -147,10 +152,10 @@
   <div class="card">
     <h2 data-i18n="Pricing">Pricing</h2>
     <div class="row2">
-      <div><label for="markup" data-i18n="Markup %">Markup %</label><input id="markup" type="number" step="0.5" value="20"></div>
-      <div><label for="cont" data-i18n="Contingency %">Contingency %</label><input id="cont" type="number" step="0.5" value="10"></div>
-      <div><label for="floor" data-i18n="Minimum margin floor %">Minimum margin floor %</label><input id="floor" type="number" step="0.5" value="15"></div>
-      <div><label for="lockCont" data-i18n="Lock contingency">Lock contingency</label><select id="lockCont"><option value="1" data-i18n="Locked (change-order cushion)">Locked (change-order cushion)</option><option value="0" data-i18n="Unlocked">Unlocked</option></select></div>
+      <div><label for="markup" data-i18n="Markup %">Markup %</label><input id="markup" type="number" min="0" step="any" value="20"></div>
+      <div><label for="cont" data-i18n="Contingency %">Contingency %</label><input id="cont" type="number" min="0" step="any" value="10"></div>
+      <div><label for="floor" data-i18n="Minimum margin floor %">Minimum margin floor %</label><input id="floor" type="number" min="0" step="any" value="15"></div>
+      <div><label for="lockCont" data-i18n="Lock contingency">Lock contingency</label><select id="lockCont"><option value="0" data-i18n="Unlocked">Unlocked</option><option value="1" data-i18n="Locked (change-order cushion)">Locked (change-order cushion)</option></select></div>
       <div><label for="cur" data-i18n="Currency">Currency</label>
         <select id="cur"><option value="USD">USD $</option><option value="AUD">AUD $</option><option value="NZD">NZD $</option><option value="CAD">CAD $</option><option value="MXN">MXN $</option></select></div>
       <div><label for="gst" data-i18n="Tax">Tax</label>
@@ -169,11 +174,12 @@
 
   <div class="card sum" id="summary">
     <h2 data-i18n="Bid breakdown">Bid breakdown</h2>
+    <p id="inputWarn" role="status"></p>
     <div><span data-i18n="Materials">Materials</span><span id="sMat"></span></div>
     <div><span class="lw">Labor</span><span id="sLab"></span></div>
     <div><span data-i18n="Direct cost">Direct cost</span><span id="sDirect"></span></div>
-    <div><span data-i18n="Contingency">Contingency</span><span id="sCont"></span></div>
-    <div><span data-i18n="Markup">Markup</span><span id="sMark"></span></div>
+    <div><span><span data-i18n="Contingency">Contingency</span> <span class="mute" data-i18n="% of direct cost">% of direct cost</span></span><span id="sCont"></span></div>
+    <div><span><span data-i18n="Markup">Markup</span> <span class="mute" data-i18n="% of cost + contingency">% of cost + contingency</span></span><span id="sMark"></span></div>
     <div id="coRow" style="display:none"><span><span data-i18n="Change orders">Change orders</span> <small class="mute" id="sCOd"></small></span><span id="sCO"></span></div>
     <div id="exRow"><span id="exLabel">Total ex GST</span><span id="sEx"></span></div>
     <div id="gstRow"><span id="gstLabel">GST</span><span id="sGst"></span></div>
@@ -205,7 +211,7 @@ const PRESETS={
   solar:{job:"6.6kW solar + 10kWh battery",desc:"Residential rooftop solar 6.6kW with inverter and 10kWh battery, tile roof.",
     mats:[["Solar panels 440W",15,"ea",210],["Hybrid inverter",1,"ea",2400],["Battery 10kWh",1,"ea",7800],["Mounting rails + clamps",1,"lot",650],["DC isolators + cabling",1,"lot",380]],
     labs:[["Installer (licensed)",16,95],["Roof hand",16,55]],markup:15,cont:7,cur:"AUD",gst:"10"},
-  fitout:{job:"Healthcare clinic tenant fit-out",desc:"4,000 sq ft clinic fit-out: framing, drywall, ceilings, doors, finish carpentry, flooring, paint. Occupied building.",
+  fitout:{lock:"1",job:"Healthcare clinic tenant fit-out",desc:"4,000 sq ft clinic fit-out: framing, drywall, ceilings, doors, finish carpentry, flooring, paint. Occupied building.",
     mats:[["Metal studs + track",4000,"sq ft",1.35],["Drywall + finishing",9000,"sq ft",0.95],["Acoustic ceiling grid + tile",4000,"sq ft",3.2],["Doors, frames + hardware",14,"ea",1150],["Flooring (LVT + sheet vinyl)",4000,"sq ft",5.5],["Paint",9000,"sq ft",0.45]],
     labs:[["Framing crew",320,68],["Drywall crew",360,62],["Finish carpentry",160,72],["Project supervision",120,85]],markup:12,cont:8,cur:"USD",gst:"0"},
   hvacmx:{job:"Nave industrial - HVAC (Monterrey)",client:"General contractor",desc:"Industrial HVAC tender: 4 rooftop units (equipos en techo), 1,200 m2 ductwork (ductos), lift to roof, startup and commissioning (arranque). 48h to submit.",
@@ -215,7 +221,7 @@ const PRESETS={
   telecom:{job:"Enterprise fiber + managed routers, 50 sites",client:"Enterprise (bank)",desc:"50-site business fiber 1Gbps with managed router per site, 36-month term. One-time installation per site plus site survey.",
     mats:[],labs:[],markup:20,cont:10,cur:"USD",gst:"0",term:36,
     rcs:[["Business fiber 1Gbps",50,420],["Managed router",50,35]],ots:[["Installation",50,650],["Site survey",1,2500]]},
-  blank:{job:"",desc:"",mats:[["",1,"ea",0]],labs:[["",0,0]],markup:20,cont:10,cur:"USD",gst:"0"}
+  blank:{client:"",job:"",desc:"",mats:[["",1,"ea",0]],labs:[["",0,0]],markup:20,cont:10,cur:"USD",gst:"0"}
 };
 const RULES=[
   {k:"disposal",t:"Disposal / haul-off / dump fees",match:/dispos|haul|dump|skip bin|waste|tip fee/i,when:/tear|remov|demo|excavat|old|strip|lawn|patio|wall|landscap|renovat/i,add:["Disposal / haul-off (dump fees + truck)",1,"lot",450]},
@@ -233,7 +239,7 @@ const RULES=[
   {k:"travel",t:"Travel / mobilization",match:/travel|mobili|call-?out/i,when:/./,addLab:["Travel / mobilization",2,60]}
 ];
 const $=id=>document.getElementById(id);
-const ES={"Itemized contractor bids. See your margin before it goes out the door.": "Presupuestos detallados para contratistas. Vea su margen antes de enviarlo.", "Job": "Obra", "Job name": "Nombre de la obra", "Client": "Cliente", "Scope notes (in your own words)": "Alcance (en sus palabras)", "Start from:": "Empezar con:", "Commercial fit-out": "Acondicionamiento comercial", "Landscape / hardscape": "Paisajismo", "Electrical fit-out": "Instalación eléctrica", "Solar + battery": "Solar + batería", "Enterprise telecom quote": "Cotización telecom empresarial", "Blank": "En blanco", "Save bid": "Guardar", "Duplicate": "Duplicar", "Load": "Abrir", "Delete": "Eliminar", "Bids are saved in this browser only.": "Los presupuestos se guardan solo en este navegador.", "Materials": "Materiales", "Item": "Concepto", "Qty": "Cant.", "Unit": "Unidad", "Unit cost": "Costo unitario", "Markup %": "Margen de ganancia %", "Line total": "Importe", "+ Material line": "+ Agregar partida", "Square-footage line": "Partida por pie cuadrado", "Length (ft)": "Largo (pies)", "Width (ft)": "Ancho (pies)", "Price / sq ft": "Precio / pie²", "Add to bid": "Agregar al presupuesto", "Crew / task": "Cuadrilla / tarea", "Hours": "Horas", "Rate / hr": "Tarifa / hora", "Crew-days line": "Cuadrilla: personas x días x horas", "(people x days x hours/day, instead of a lump pool of hours)": "(en lugar de una bolsa de horas)", "Task": "Tarea", "Crew size (people)": "Personas", "Days": "Días", "Hours / day": "Horas / día", "Add crew-days line": "Agregar cuadrilla", "Change orders": "Órdenes de cambio", "Change order": "Orden de cambio", "Cost": "Costo", "Price": "Precio", "+ Change-order line": "+ Agregar orden de cambio", "Price change orders on their own, with their own markup, so they show separately on the breakdown and don't quietly eat your contingency or margin.": "Cotice las órdenes de cambio por separado, con su propio margen, para que no se coman su contingencia ni su utilidad.", "Recurring & one-time charges": "Cargos recurrentes y únicos", "Contract term (months)": "Plazo (meses)", "Recurring (monthly)": "Recurrentes (mensuales)", "Description": "Descripción", "Monthly unit price": "Precio unitario mensual", "Monthly total": "Total mensual", "+ Recurring line": "+ Agregar partida recurrente", "One-time (installation, setup)": "Únicos (instalación)", "+ One-time line": "+ Agregar cargo único", "Did I forget anything?": "¿Olvidé algo?", "Check for missing lines": "Revisar partidas faltantes", "Checks your scope notes and lines for items contractors commonly miss (disposal, delivery, permits, equipment, inspection...).": "Revisa su alcance y partidas buscando conceptos que se suelen olvidar (desecho, flete, permisos, equipo, inspección...).", "Pricing": "Precios", "Contingency %": "Contingencia %", "Minimum margin floor %": "Margen mínimo %", "Lock contingency": "Bloquear contingencia", "Currency": "Moneda", "Tax": "Impuesto", "Locked (change-order cushion)": "Bloqueada (colchón para cambios)", "Unlocked": "Desbloqueada", "No tax line": "Sin impuesto", "Bid breakdown": "Desglose del presupuesto", "Direct cost": "Costo directo", "Contingency": "Contingencia", "Markup": "Margen de ganancia", "Profit": "Utilidad", "Margin": "Margen", "Copy bid summary": "Copiar resumen", "Recurring & one-time": "Recurrentes y únicos", "Monthly recurring (MRC)": "Mensual recurrente (MRC)", "One-time total (NRC)": "Total único (NRC)", "First-year total": "Total primer año", "Bid total": "Total del presupuesto", "Total ex GST": "Total sin GST", "Final total inc. GST": "Total con GST", "Total contract value": "Valor total del contrato", "Missing:": "Falta:", "Add line": "Agregar partida", "No common items missing. Looks complete.": "No faltan conceptos comunes. Se ve completo.", "Checking...": "Revisando...", "+ Labor line": "+ Agregar partida (mano de obra)", "+ Labour line": "+ Agregar partida (mano de obra)", "Disposal / haul-off / dump fees": "Desecho / retiro de escombro", "Material delivery": "Flete de materiales", "Equipment rental (skid steer, compactor, scissor lift)": "Renta de equipo (minicargador, compactadora, plataforma)", "Permits / council or city approval": "Permisos / licencia municipal", "Inspection, testing and compliance certificate": "Inspección, pruebas y certificado", "Drainage (drain rock, pipe, fabric) behind retaining wall": "Drenaje detrás del muro de contención", "Switchboard upgrade / capacity check": "Actualización de tablero eléctrico", "Change-order / owner-allowance cushion": "Colchón para órdenes de cambio", "Infection control (ICRA) barriers for healthcare work": "Barreras de control de infecciones (ICRA)", "Crane / hoist rental to lift rooftop equipment (grua)": "Renta de grúa / polipasto para subir equipos al techo", "Startup / commissioning (arranque)": "Arranque y puesta en marcha", "Site cleanup / restoration": "Limpieza final de obra", "Travel / mobilization": "Traslado / movilización"};
+const ES={"% of direct cost": "% del costo directo", "% of cost + contingency": "% del costo + contingencia", "Itemized contractor bids. See your margin before it goes out the door.": "Presupuestos detallados para contratistas. Vea su margen antes de enviarlo.", "Job": "Obra", "Job name": "Nombre de la obra", "Client": "Cliente", "Scope notes (in your own words)": "Alcance (en sus palabras)", "Start from:": "Empezar con:", "Commercial fit-out": "Acondicionamiento comercial", "Landscape / hardscape": "Paisajismo", "Electrical fit-out": "Instalación eléctrica", "Solar + battery": "Solar + batería", "Enterprise telecom quote": "Cotización telecom empresarial", "Blank": "En blanco", "Save bid": "Guardar", "Duplicate": "Duplicar", "Load": "Abrir", "Delete": "Eliminar", "Bids are saved in this browser only.": "Los presupuestos se guardan solo en este navegador.", "Materials": "Materiales", "Item": "Concepto", "Qty": "Cant.", "Unit": "Unidad", "Unit cost": "Costo unitario", "Markup %": "Margen de ganancia %", "Line total": "Importe", "+ Material line": "+ Agregar partida", "Square-footage line": "Partida por pie cuadrado", "Length (ft)": "Largo (pies)", "Width (ft)": "Ancho (pies)", "Price / sq ft": "Precio / pie²", "Add to bid": "Agregar al presupuesto", "Crew / task": "Cuadrilla / tarea", "Hours": "Horas", "Rate / hr": "Tarifa / hora", "Crew-days line": "Cuadrilla: personas x días x horas", "(people x days x hours/day, instead of a lump pool of hours)": "(en lugar de una bolsa de horas)", "Task": "Tarea", "Crew size (people)": "Personas", "Days": "Días", "Hours / day": "Horas / día", "Add crew-days line": "Agregar cuadrilla", "Change orders": "Órdenes de cambio", "Change order": "Orden de cambio", "Cost": "Costo", "Price": "Precio", "+ Change-order line": "+ Agregar orden de cambio", "Price change orders on their own, with their own markup, so they show separately on the breakdown and don't quietly eat your contingency or margin.": "Cotice las órdenes de cambio por separado, con su propio margen, para que no se coman su contingencia ni su utilidad.", "Recurring & one-time charges": "Cargos recurrentes y únicos", "Contract term (months)": "Plazo (meses)", "Recurring (monthly)": "Recurrentes (mensuales)", "Description": "Descripción", "Monthly unit price": "Precio unitario mensual", "Monthly total": "Total mensual", "+ Recurring line": "+ Agregar partida recurrente", "One-time (installation, setup)": "Únicos (instalación)", "+ One-time line": "+ Agregar cargo único", "Did I forget anything?": "¿Olvidé algo?", "Check for missing lines": "Revisar partidas faltantes", "Checks your scope notes and lines for items contractors commonly miss (disposal, delivery, permits, equipment, inspection...).": "Revisa su alcance y partidas buscando conceptos que se suelen olvidar (desecho, flete, permisos, equipo, inspección...).", "Pricing": "Precios", "Contingency %": "Contingencia %", "Minimum margin floor %": "Margen mínimo %", "Lock contingency": "Bloquear contingencia", "Currency": "Moneda", "Tax": "Impuesto", "Locked (change-order cushion)": "Bloqueada (colchón para cambios)", "Unlocked": "Desbloqueada", "No tax line": "Sin impuesto", "Bid breakdown": "Desglose del presupuesto", "Direct cost": "Costo directo", "Contingency": "Contingencia", "Markup": "Margen de ganancia", "Profit": "Utilidad", "Margin": "Margen", "Copy bid summary": "Copiar resumen", "Recurring & one-time": "Recurrentes y únicos", "Monthly recurring (MRC)": "Mensual recurrente (MRC)", "One-time total (NRC)": "Total único (NRC)", "First-year total": "Total primer año", "Bid total": "Total del presupuesto", "Total ex GST": "Total sin GST", "Final total inc. GST": "Total con GST", "Total contract value": "Valor total del contrato", "Missing:": "Falta:", "Add line": "Agregar partida", "No common items missing. Looks complete.": "No faltan conceptos comunes. Se ve completo.", "Checking...": "Revisando...", "+ Labor line": "+ Agregar partida (mano de obra)", "+ Labour line": "+ Agregar partida (mano de obra)", "Disposal / haul-off / dump fees": "Desecho / retiro de escombro", "Material delivery": "Flete de materiales", "Equipment rental (skid steer, compactor, scissor lift)": "Renta de equipo (minicargador, compactadora, plataforma)", "Permits / council or city approval": "Permisos / licencia municipal", "Inspection, testing and compliance certificate": "Inspección, pruebas y certificado", "Drainage (drain rock, pipe, fabric) behind retaining wall": "Drenaje detrás del muro de contención", "Switchboard upgrade / capacity check": "Actualización de tablero eléctrico", "Change-order / owner-allowance cushion": "Colchón para órdenes de cambio", "Infection control (ICRA) barriers for healthcare work": "Barreras de control de infecciones (ICRA)", "Crane / hoist rental to lift rooftop equipment (grua)": "Renta de grúa / polipasto para subir equipos al techo", "Startup / commissioning (arranque)": "Arranque y puesta en marcha", "Site cleanup / restoration": "Limpieza final de obra", "Travel / mobilization": "Traslado / movilización"};
 Object.assign(ES,{"Copy client bid":"Copiar presupuesto para cliente","Client version: line prices include your markup and contingency. No cost, markup or margin shown.":"Versión para cliente: los precios ya incluyen su margen y contingencia. No muestra costos ni margen.",
   "QUOTE":"COTIZACIÓN","Prepared for":"Para","Date":"Fecha","Scope":"Alcance","TOTAL":"TOTAL","Monthly recurring":"Mensual recurrente","One-time charges":"Cargos únicos","Copied.":"Copiado.","Copy failed; select and copy below.":"No se pudo copiar; seleccione y copie abajo."});
 let LANG="en";
@@ -245,26 +251,28 @@ function setLang(l){LANG=l==="es"?"es":"en";document.documentElement.lang=LANG;
 let mats=[],labs=[],rcs=[],ots=[],cos=[];
 function ov(v){return v===undefined||v===null||String(v).trim()===""?null:num(v)}
 
-function fmt(n){const c=$("cur").value;return (c==="USD"?"$":c+" $")+n.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}
+function fmt(n){const c=$("cur").value;return (c==="USD"?"$":c+" $")+n.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2})}
 function labWord(){return LANG==="es"?"Mano de obra":["AUD","NZD"].includes($("cur").value)?"Labour":"Labor"}
 function num(v){const n=parseFloat(v);return isFinite(n)?n:0}
+// Quantities, unit costs, hours and rates can't be negative: a negative entry is flagged red and counts as 0.
+function pos(v){return Math.max(0,num(v))}
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
 
 function render(){
   const mb=$("matTable").querySelector("tbody");
   mb.innerHTML=mats.map((m,i)=>`<tr>
     <td><input aria-label="Material item" value="${esc(m[0])}" data-t="m" data-i="${i}" data-f="0"></td>
-    <td class="num"><input aria-label="Quantity" type="number" step="any" style="width:80px" value="${m[1]}" data-t="m" data-i="${i}" data-f="1"></td>
+    <td class="num"><input aria-label="Quantity" type="number" min="0" step="any" style="width:80px" value="${m[1]}" data-t="m" data-i="${i}" data-f="1"></td>
     <td><input aria-label="Unit" style="width:70px" value="${esc(m[2])}" data-t="m" data-i="${i}" data-f="2"></td>
-    <td class="num"><input aria-label="Unit cost" type="number" step="any" style="width:90px" value="${m[3]}" data-t="m" data-i="${i}" data-f="3"></td>
+    <td class="num"><input aria-label="Unit cost" type="number" min="0" step="any" style="width:90px" value="${m[3]}" data-t="m" data-i="${i}" data-f="3"></td>
     <td class="num"><input class="mo" aria-label="Markup % override" type="number" step="any" style="width:70px" value="${esc(m[4]??"")}" data-t="m" data-i="${i}" data-f="4"></td>
     <td class="num" id="mt${i}"></td>
     <td><button class="x" title="Remove line" data-del="m" data-i="${i}">&times;</button></td></tr>`).join("");
   const lb=$("labTable").querySelector("tbody");
   lb.innerHTML=labs.map((l,i)=>`<tr>
     <td><input aria-label="Labour/labor task" value="${esc(l[0])}" data-t="l" data-i="${i}" data-f="0"></td>
-    <td class="num"><input aria-label="Hours" type="number" step="any" style="width:80px" value="${l[1]}" data-t="l" data-i="${i}" data-f="1"></td>
-    <td class="num"><input aria-label="Rate per hour" type="number" step="any" style="width:90px" value="${l[2]}" data-t="l" data-i="${i}" data-f="2"></td>
+    <td class="num"><input aria-label="Hours" type="number" min="0" step="any" style="width:80px" value="${l[1]}" data-t="l" data-i="${i}" data-f="1"></td>
+    <td class="num"><input aria-label="Rate per hour" type="number" min="0" step="any" style="width:90px" value="${l[2]}" data-t="l" data-i="${i}" data-f="2"></td>
     <td class="num"><input class="mo" aria-label="Markup % override" type="number" step="any" style="width:70px" value="${esc(l[3]??"")}" data-t="l" data-i="${i}" data-f="3"></td>
     <td class="num" id="lt${i}"></td>
     <td><button class="x" title="Remove line" data-del="l" data-i="${i}">&times;</button></td></tr>`).join("");
@@ -288,15 +296,15 @@ function render(){
 
 function calc(){
   let mat=0,lab=0;
-  mats.forEach((m,i)=>{const t=num(m[1])*num(m[3]);mat+=t;const c=$("mt"+i);if(c)c.textContent=fmt(t)});
-  labs.forEach((l,i)=>{const t=num(l[1])*num(l[2]);lab+=t;const c=$("lt"+i);if(c)c.textContent=fmt(t)});
+  mats.forEach((m,i)=>{const t=pos(m[1])*pos(m[3]);mat+=t;const c=$("mt"+i);if(c)c.textContent=fmt(t)});
+  labs.forEach((l,i)=>{const t=pos(l[1])*pos(l[2]);lab+=t;const c=$("lt"+i);if(c)c.textContent=fmt(t)});
   const direct=mat+lab;
   const cont=direct*num($("cont").value)/100;
   const gm=num($("markup").value),cf=1+num($("cont").value)/100;
   let mark=(direct+cont)*gm/100,overridden=false;
   // per-line markup overrides: adjust only the overridden lines (no overrides = original formula exactly)
-  mats.forEach(m=>{const o=ov(m[4]);if(o!==null){overridden=true;mark+=num(m[1])*num(m[3])*cf*(o-gm)/100}});
-  labs.forEach(l=>{const o=ov(l[3]);if(o!==null){overridden=true;mark+=num(l[1])*num(l[2])*cf*(o-gm)/100}});
+  mats.forEach(m=>{const o=ov(m[4]);if(o!==null){overridden=true;mark+=pos(m[1])*pos(m[3])*cf*(o-gm)/100}});
+  labs.forEach(l=>{const o=ov(l[3]);if(o!==null){overridden=true;mark+=pos(l[1])*pos(l[2])*cf*(o-gm)/100}});
   let coCost=0,coMark=0;
   cos.forEach((x,i)=>{const c=num(x[1]),o=ov(x[2]),mk=c*(o===null?gm:o)/100;coCost+=c;coMark+=mk;const e=$("ct"+i);if(e)e.textContent=fmt(c+mk)});
   document.querySelectorAll("input.mo").forEach(e=>{e.placeholder=gm});
@@ -322,14 +330,17 @@ function calc(){
   $("marginWarn").innerHTML=!below?"":LANG==="es"?`<strong>POR DEBAJO DE SU MARGEN MÍNIMO DE ${floor}%. No enviar.</strong> Suba el margen de ganancia a por lo menos ${need.toFixed(1)}% para alcanzarlo.`
     :`<strong>BELOW YOUR ${floor}% FLOOR. Do not send.</strong> Raise markup to at least ${need.toFixed(1)}% to hit the floor.`;
   $("summary").style.outline=below?"3px solid var(--warn)":"none";$("summary").style.background=below?"#fbefe9":"";$("sMargin").style.color=below?"var(--warn)":"";
-  $("cont").disabled=$("lockCont").value==="1";
+  const locked=$("lockCont").value==="1";
+  $("cont").disabled=locked;$("cont").title=locked?"Contingency is locked. Set Lock contingency to Unlocked to change it.":"";
+  const bad=[...document.querySelectorAll('input[type="number"]')].filter(i=>!i.validity.valid).length,iw=$("inputWarn");
+  if(iw)iw.textContent=bad?(bad>1?`${bad} fields have`:"1 field has")+" a negative or invalid number. Fix the fields in red.":"";
   const LW=labWord();document.querySelectorAll(".lw").forEach(e=>{if(e.textContent!==LW)e.textContent=LW});
   $("addLab").textContent=tr(`+ ${LW} line`);
   $("auGst").setAttribute("aria-pressed",String(g===10&&$("cur").value==="AUD"));
   const aL=num($("aLen").value),aW=num($("aWid").value),aP=num($("aPrice").value),aA=aL*aW;
   const cN=num($("cdPeople").value),cD=num($("cdDays").value),cH=num($("cdHours").value),cR=num($("cdRate").value),cT=cN*cD*cH;
   $("cdOut").textContent=LANG==="es"?`${cN} personas x ${cD} días x ${cH} h = ${cT.toLocaleString()} h x ${fmt(cR)}/h = ${fmt(cT*cR)}`:`${cN} people x ${cD} days x ${cH} h = ${cT.toLocaleString()} h x ${fmt(cR)}/h = ${fmt(cT*cR)}`;
-  $("aOut").textContent=`${aL} ft x ${aW} ft = ${aA.toLocaleString()} sq ft x ${fmt(aP)}/sq ft = ${fmt(aA*aP)}`;
+  $("aOut").textContent=`${aL} ft x ${aW} ft = ${aA.toLocaleString("en-US")} sq ft x ${fmt(aP)}/sq ft = ${fmt(aA*aP)}`;
   let mrc=0,nrc=0;
   rcs.forEach((x,i)=>{const t=num(x[1])*num(x[2]);mrc+=t;const c=$("rt"+i);if(c)c.textContent=fmt(t)+" /mo"});
   ots.forEach((x,i)=>{const t=num(x[1])*num(x[2]);nrc+=t;const c=$("ot"+i);if(c)c.textContent=fmt(t)});
@@ -347,8 +358,8 @@ function load(p){
   $("job").value=P.job;$("desc").value=P.desc;
   mats=P.mats.map(r=>r.slice());labs=P.labs.map(r=>r.slice());
   cos=(P.cos||[]).map(r=>r.slice());rcs=(P.rcs||[]).map(r=>r.slice());ots=(P.ots||[]).map(r=>r.slice());$("rcTerm").value=P.term||36;
-  if(P.client)$("client").value=P.client;
-  $("markup").value=P.markup;$("cont").value=P.cont;$("cur").value=P.cur;$("gst").value=P.gst;
+  if(P.client!==undefined)$("client").value=P.client;
+  $("markup").value=P.markup;$("cont").value=P.cont;$("lockCont").value=P.lock??"0";$("cur").value=P.cur;$("gst").value=P.gst;
   $("flags").innerHTML="";if(p==="hvacmx")setLang("es");render();
 }
 
@@ -435,8 +446,8 @@ document.addEventListener("click",e=>{if(e.target.id==="undoDel"&&lastDeleted){c
 function clientBid(){
   const b=window.__bid,gm=num($("markup").value),cf=1+num($("cont").value)/100,c2=v=>Math.round(v*100)/100;
   const items=[];
-  mats.forEach(m=>{if(!m[0]&&!num(m[1]))return;const o=ov(m[4]);items.push({g:"m",n:m[0]||"Item",q:`${m[1]} ${m[2]}`,v:num(m[1])*num(m[3])*cf*(1+(o===null?gm:o)/100)})});
-  labs.forEach(l=>{if(!l[0]&&!num(l[1]))return;const o=ov(l[3]);items.push({g:"l",n:l[0]||"Labor",q:`${l[1]} h`,v:num(l[1])*num(l[2])*cf*(1+(o===null?gm:o)/100)})});
+  mats.forEach(m=>{if(!m[0]&&!num(m[1]))return;const o=ov(m[4]);items.push({g:"m",n:m[0]||"Item",q:`${m[1]} ${m[2]}`,v:pos(m[1])*pos(m[3])*cf*(1+(o===null?gm:o)/100)})});
+  labs.forEach(l=>{if(!l[0]&&!num(l[1]))return;const o=ov(l[3]);items.push({g:"l",n:l[0]||"Labor",q:`${l[1]} h`,v:pos(l[1])*pos(l[2])*cf*(1+(o===null?gm:o)/100)})});
   cos.forEach(x=>{const o=ov(x[2]);items.push({g:"c",n:x[0]||"Change order",q:"",v:num(x[1])*(1+(o===null?gm:o)/100)})});
   items.forEach(i=>i.r=c2(i.v));
   const sub=c2(b.total-b.gst),diff=c2(sub-items.reduce((a,i)=>a+i.r,0));
@@ -460,8 +471,8 @@ $("clientBtn").onclick=()=>{const txt=clientBid();$("clientOut").textContent=txt
 $("copyBtn").onclick=()=>{
   const b=window.__bid;
   const txt=[`BID: ${$("job").value} for ${$("client").value}`,
-    ...mats.filter(m=>m[0]).map(m=>`  ${m[0]}: ${m[1]} ${m[2]} x ${fmt(num(m[3]))} = ${fmt(num(m[1])*num(m[3]))}`),
-    ...labs.filter(l=>l[0]).map(l=>`  ${l[0]}: ${l[1]} hrs x ${fmt(num(l[2]))} = ${fmt(num(l[1])*num(l[2]))}`),
+    ...mats.filter(m=>m[0]).map(m=>`  ${m[0]}: ${m[1]} ${m[2]} x ${fmt(num(m[3]))} = ${fmt(pos(m[1])*pos(m[3]))}`),
+    ...labs.filter(l=>l[0]).map(l=>`  ${l[0]}: ${l[1]} hrs x ${fmt(num(l[2]))} = ${fmt(pos(l[1])*pos(l[2]))}`),
     ...cos.filter(x=>x[0]).map(x=>`  CHANGE ORDER ${x[0]}: cost ${fmt(num(x[1]))}`),
     `Materials ${fmt(b.materials)} | ${labWord()} ${fmt(b.labor)} | Contingency ${fmt(b.contingency)} | Markup ${fmt(b.markup)}`+(cos.length?` | Change orders ${fmt(b.changeOrderCost+b.changeOrderMarkup)}`:"")+(b.gst?` | GST ${fmt(b.gst)}`:""),
     `TOTAL ${fmt(b.total)} | Profit ${fmt(b.profit)} | Margin ${b.marginPct.toFixed(1)}%`,
