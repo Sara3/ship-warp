@@ -11,8 +11,9 @@
   header{background:var(--ink);color:#fff;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
   header h1{font-size:20px;margin:0}
   header span{color:#bdbcb5;font-size:13px}
-  main{max-width:1100px;margin:0 auto;padding:18px;display:grid;grid-template-columns:1fr 340px;gap:18px}
-  @media(max-width:900px){main{grid-template-columns:1fr}}
+  main{max-width:1100px;margin:0 auto;padding:18px;display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:18px}
+  @media(max-width:900px){main{grid-template-columns:minmax(0,1fr)}}
+  #matTable td:first-child input,#labTable td:first-child input,#coTable td:first-child input{min-width:150px}
   .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:16px}
   h2{font-size:15px;margin:0 0 10px;text-transform:uppercase;letter-spacing:.04em;color:var(--mute)}
   label{font-size:12px;color:var(--mute);display:block;margin-bottom:3px}
