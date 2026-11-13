@@ -226,6 +226,60 @@ const startsWithMoney = (s, m) => s === m || s.startsWith(m + " ");
   ok(/Nothing to load/.test(t3.txt("saveMsg")), "load with nothing saved shows hint");
 }
 
+// ---------- Frio Regio: crew-days, MXN + IVA 16%, HVAC MX template, crane/startup rules ----------
+{
+  const t = boot();
+  t.preset("landscape");
+  t.set("gst", "10");
+  eq(t.txt("exLabel"), "Total ex GST", "GST ex label unchanged");
+  eq(t.txt("gstLabel"), "GST 10%", "GST label unchanged");
+  t.set("gst", "0");
+  // crew-days builder
+  const before = t.d.querySelectorAll("#labTable tbody tr").length;
+  t.set("cdName", "Rooftop equipment install"); t.set("cdPeople", "6"); t.set("cdDays", "5"); t.set("cdHours", "9"); t.set("cdRate", "180");
+  ok(t.txt("cdOut").includes("270 h"), "crew-days preview shows hours");
+  t.$("cdAdd").click();
+  const rows = t.d.querySelectorAll("#labTable tbody tr");
+  eq(rows.length, before + 1, "crew-days adds a labor line");
+  const last = rows[rows.length - 1];
+  eq(last.querySelector('input[data-f="0"]').value, "Rooftop equipment install (6 people x 5 days x 9 h)", "crew-days line name");
+  eq(last.querySelector('input[data-f="1"]').value, "270", "crew-days hours = N*D*H");
+  ok(startsWithMoney(t.txt("sLab"), "$54,480.00"), `labor includes crew-days line (got ${t.txt("sLab")})`);
+  // HVAC MX template
+  t.preset("hvacmx");
+  eq(t.$("cur").value, "MXN", "MXN currency"); eq(t.$("gst").value, "16", "IVA 16%");
+  ok(startsWithMoney(t.txt("sMat"), "MXN $1,981,000.00"), `HVAC materials (got ${t.txt("sMat")})`);
+  ok(startsWithMoney(t.txt("sLab"), "MXN $172,800.00"), `HVAC labor (got ${t.txt("sLab")})`);
+  eq(t.txt("exLabel"), "Total sin IVA", "IVA ex label");
+  eq(t.txt("sEx"), "MXN $2,791,324.80", "subtotal sin IVA");
+  eq(t.txt("gstLabel"), "IVA 16%", "IVA label");
+  eq(t.txt("sGst"), "MXN $446,611.97", "IVA amount");
+  eq(t.txt("totalLabel"), "Total con IVA", "Total con IVA label");
+  eq(t.txt("sTotal"), "MXN $3,237,936.77", "total con IVA");
+  eq(t.txt("marginWarn"), "", "HVAC template above floor");
+  t.$("checkBtn").click();
+  const f1 = t.txt("flags");
+  ok(!/Crane/.test(f1), "crane not flagged when crane line present");
+  ok(!/commissioning/i.test(f1), "startup not flagged when present");
+  // remove crane + startup lines -> both flagged
+  t.d.querySelectorAll('#matTable [data-del="m"]')[2].click();
+  t.d.querySelectorAll('#labTable [data-del="l"]')[2].click();
+  t.$("desc").value = "4 rooftop units on techo, ductwork";
+  t.$("checkBtn").click();
+  const f2 = t.txt("flags");
+  ok(/Crane \/ hoist/.test(f2), "crane/hoist flagged for rooftop units");
+  ok(/Startup \/ commissioning \(arranque\)/.test(f2), "startup/commissioning flagged");
+  // switching back keeps GST labels exact
+  t.preset("electrical");
+  eq(t.txt("exLabel"), "Total ex GST", "GST label after IVA");
+  eq(t.txt("totalLabel"), "Final total inc. GST", "GST total label after IVA");
+  // landscape rule output unchanged by new rules
+  t.preset("landscape"); t.$("checkBtn").click();
+  ok(!/Crane|commissioning/i.test(t.txt("flags")), "landscape check unaffected by HVAC rules");
+  t.preset("solar"); t.$("checkBtn").click();
+  ok(!/Crane|commissioning/i.test(t.txt("flags")), "solar check unaffected by HVAC rules");
+}
+
 // @@NEXT@@
 
 console.log(`${failures ? "FAILED" : "PASSED"}: ${passes} passed, ${failures} failed`);

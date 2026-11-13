@@ -65,6 +65,7 @@
       <button data-preset="landscape">Landscape / hardscape</button>
       <button data-preset="electrical">Electrical fit-out</button>
       <button data-preset="solar">Solar + battery</button>
+      <button data-preset="hvacmx">HVAC industrial (MX)</button>
       <button data-preset="telecom">Enterprise telecom quote</button>
       <button data-preset="blank">Blank</button>
     </div>
@@ -99,6 +100,18 @@
     <h2 class="lw">Labor</h2>
     <table id="labTable"><thead><tr><th>Crew / task</th><th class="num">Hours</th><th class="num">Rate / hr</th><th class="num" title="Leave blank to use the global markup">Markup %</th><th class="num">Line total</th><th></th></tr></thead><tbody></tbody></table>
     <div class="actions"><button id="addLab">+ <span class="lw">Labor</span> line</button></div>
+    <div style="margin-top:12px;padding:10px;border:1px dashed var(--line);border-radius:8px">
+      <strong style="font-size:14px">Crew-days line</strong> <span class="mute">(people x days x hours/day, instead of a lump pool of hours)</span>
+      <div class="row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr;margin-top:6px">
+        <div><label for="cdName">Task</label><input id="cdName" value="Crew task"></div>
+        <div><label for="cdPeople">Crew size (people)</label><input id="cdPeople" type="number" step="any" value="3"></div>
+        <div><label for="cdDays">Days</label><input id="cdDays" type="number" step="any" value="2"></div>
+        <div><label for="cdHours">Hours / day</label><input id="cdHours" type="number" step="any" value="8"></div>
+        <div><label for="cdRate">Rate / hr</label><input id="cdRate" type="number" step="any" value="60"></div>
+      </div>
+      <p class="mute" id="cdOut" style="margin:8px 0"></p>
+      <button class="primary" id="cdAdd">Add crew-days line</button>
+    </div>
   </div>
 
   <div class="card" id="coCard">
@@ -137,9 +150,9 @@
       <div><label for="floor">Minimum margin floor %</label><input id="floor" type="number" step="0.5" value="15"></div>
       <div><label for="lockCont">Lock contingency</label><select id="lockCont"><option value="1">Locked (change-order cushion)</option><option value="0">Unlocked</option></select></div>
       <div><label for="cur">Currency</label>
-        <select id="cur"><option value="USD">USD $</option><option value="AUD">AUD $</option><option value="NZD">NZD $</option><option value="CAD">CAD $</option></select></div>
+        <select id="cur"><option value="USD">USD $</option><option value="AUD">AUD $</option><option value="NZD">NZD $</option><option value="CAD">CAD $</option><option value="MXN">MXN $</option></select></div>
       <div><label for="gst">Tax</label>
-        <select id="gst"><option value="0">No tax line</option><option value="10">GST 10% (AU)</option><option value="15">GST 15% (NZ)</option></select></div>
+        <select id="gst"><option value="0">No tax line</option><option value="10">GST 10% (AU)</option><option value="15">GST 15% (NZ)</option><option value="16">IVA 16% (MX)</option></select></div>
     </div>
   </div>
 
@@ -160,7 +173,7 @@
     <div><span>Contingency</span><span id="sCont"></span></div>
     <div><span>Markup</span><span id="sMark"></span></div>
     <div id="coRow" style="display:none"><span>Change orders <small class="mute" id="sCOd"></small></span><span id="sCO"></span></div>
-    <div id="exRow"><span>Total ex GST</span><span id="sEx"></span></div>
+    <div id="exRow"><span id="exLabel">Total ex GST</span><span id="sEx"></span></div>
     <div id="gstRow"><span id="gstLabel">GST</span><span id="sGst"></span></div>
     <div class="total"><span id="totalLabel">Bid total</span><span id="sTotal"></span></div>
     <div style="border:none;padding:2px 0 6px;justify-content:flex-end;gap:6px"><button id="auGst" class="chip" aria-pressed="false" title="Australian GST: switch to AUD and add GST 10%">AU: GST 10%</button></div>
@@ -191,6 +204,10 @@ const PRESETS={
   fitout:{job:"Healthcare clinic tenant fit-out",desc:"4,000 sq ft clinic fit-out: framing, drywall, ceilings, doors, finish carpentry, flooring, paint. Occupied building.",
     mats:[["Metal studs + track",4000,"sq ft",1.35],["Drywall + finishing",9000,"sq ft",0.95],["Acoustic ceiling grid + tile",4000,"sq ft",3.2],["Doors, frames + hardware",14,"ea",1150],["Flooring (LVT + sheet vinyl)",4000,"sq ft",5.5],["Paint",9000,"sq ft",0.45]],
     labs:[["Framing crew",320,68],["Drywall crew",360,62],["Finish carpentry",160,72],["Project supervision",120,85]],markup:12,cont:8,cur:"USD",gst:"0"},
+  hvacmx:{job:"Nave industrial - HVAC (Monterrey)",client:"General contractor",desc:"Industrial HVAC tender: 4 rooftop units (equipos en techo), 1,200 m2 ductwork (ductos), lift to roof, startup and commissioning (arranque). 48h to submit.",
+    mats:[["Rooftop units (RTU)",4,"ea",285000],["Ductwork (ductos)",1200,"m2",650],["Crane rental (grua)",2,"day",18000],["Freight (flete)",1,"lot",25000]],
+    labs:[["Rooftop equipment install (6 people x 5 days x 9 h)",270,180],["Ductwork install (8 people x 10 days x 9 h)",720,160],["Startup / commissioning - arranque (2 people x 2 days x 9 h)",36,250]],
+    markup:20,cont:8,cur:"MXN",gst:"16"},
   telecom:{job:"Enterprise fiber + managed routers, 50 sites",client:"Enterprise (bank)",desc:"50-site business fiber 1Gbps with managed router per site, 36-month term. One-time installation per site plus site survey.",
     mats:[],labs:[],markup:20,cont:10,cur:"USD",gst:"0",term:36,
     rcs:[["Business fiber 1Gbps",50,420],["Managed router",50,35]],ots:[["Installation",50,650],["Site survey",1,2500]]},
@@ -206,6 +223,8 @@ const RULES=[
   {k:"board",t:"Switchboard upgrade / capacity check",match:/switchboard|board upgrade|panel upgrade|main panel/i,when:/solar|battery|circuit|fit-out/i,add:["Switchboard upgrade allowance",1,"lot",900]},
   {k:"co",t:"Change-order / owner-allowance cushion",match:/change.?order|allowance|escalat/i,when:/fit-?out|clinic|healthcare|commercial|tenant|office|retail/i,add:["Change-order allowance",1,"lot",5000]},
   {k:"icra",t:"Infection control (ICRA) barriers for healthcare work",match:/icra|infection|dust barrier|negative air/i,when:/clinic|healthcare|hospital|medical|occupied/i,add:["ICRA dust barriers + negative air",1,"lot",3200]},
+  {k:"crane",t:"Crane / hoist rental to lift rooftop equipment (grua)",match:/crane|hoist|gr[uú]a|polipasto/i,when:/roof-?top\s*(units?|equip|hvac|rtu|ac\b)|techo|azotea|\brtus?\b|hvac|unidades|\b(ac|condensing|package[d]?)\s+units?\b/i,add:["Crane / hoist rental (rooftop lift)",1,"day",2500]},
+  {k:"startup",t:"Startup / commissioning (arranque)",match:/start-?up|commission|arranque|puesta en marcha/i,when:/hvac|roof-?top\s*units?|\brtus?\b|chiller|techo|clima|aire acondicionado|duct|condens/i,addLab:["Startup / commissioning (arranque)",16,95]},
   {k:"cleanup",t:"Site cleanup / restoration",match:/clean|restor|make good|sod repair/i,when:/./,addLab:["Site cleanup / make good",4,55]},
   {k:"travel",t:"Travel / mobilization",match:/travel|mobili|call-?out/i,when:/./,addLab:["Travel / mobilization",2,60]}
 ];
@@ -278,8 +297,8 @@ function calc(){
   $("sCont").textContent=fmt(cont)+` (${num($("cont").value)}%)`;
   $("sMark").textContent=fmt(mark)+(overridden?` (blended ${(direct+cont>0?mark/(direct+cont)*100:0).toFixed(1)}%)`:` (${num($("markup").value)}%)`);
   $("coRow").style.display=cos.length?"flex":"none";$("sCO").textContent=fmt(coCost+coMark);$("sCOd").textContent=`(cost ${fmt(coCost)} + markup ${fmt(coMark)})`;
-  $("gstRow").style.display=g?"flex":"none";$("exRow").style.display=g?"flex":"none";$("sEx").textContent=fmt(sub);$("gstLabel").textContent=`GST ${g}%`;$("sGst").textContent=fmt(gst);
-  $("totalLabel").textContent=g?"Final total inc. GST":"Bid total";
+  $("gstRow").style.display=g?"flex":"none";$("exRow").style.display=g?"flex":"none";$("sEx").textContent=fmt(sub);const iva=$("gst").value==="16";$("exLabel").textContent=iva?"Total sin IVA":"Total ex GST";$("gstLabel").textContent=iva?`IVA ${g}%`:`GST ${g}%`;$("sGst").textContent=fmt(gst);
+  $("totalLabel").textContent=g?(iva?"Total con IVA":"Final total inc. GST"):"Bid total";
   $("sTotal").textContent=fmt(total);$("sProfit").textContent=fmt(profit);
   $("sMargin").textContent=margin.toFixed(1)+"%";
   $("mBar").style.width=Math.max(0,Math.min(100,margin*2.5))+"%";
@@ -293,6 +312,8 @@ function calc(){
   const LW=labWord();document.querySelectorAll(".lw").forEach(e=>{if(e.textContent!==LW)e.textContent=LW});
   $("auGst").setAttribute("aria-pressed",String(g===10&&$("cur").value==="AUD"));
   const aL=num($("aLen").value),aW=num($("aWid").value),aP=num($("aPrice").value),aA=aL*aW;
+  const cN=num($("cdPeople").value),cD=num($("cdDays").value),cH=num($("cdHours").value),cR=num($("cdRate").value),cT=cN*cD*cH;
+  $("cdOut").textContent=`${cN} people x ${cD} days x ${cH} h = ${cT.toLocaleString()} h x ${fmt(cR)}/h = ${fmt(cT*cR)}`;
   $("aOut").textContent=`${aL} ft x ${aW} ft = ${aA.toLocaleString()} sq ft x ${fmt(aP)}/sq ft = ${fmt(aA*aP)}`;
   let mrc=0,nrc=0;
   rcs.forEach((x,i)=>{const t=num(x[1])*num(x[2]);mrc+=t;const c=$("rt"+i);if(c)c.textContent=fmt(t)+" /mo"});
@@ -319,7 +340,7 @@ function load(p){
 document.addEventListener("input",e=>{
   const t=e.target;if(t.dataset.t){const arr={m:mats,l:labs,r:rcs,o:ots,c:cos}[t.dataset.t];const f=+t.dataset.f;
     arr[+t.dataset.i][f]=(t.type==="number")?t.value:t.value;calc();}
-  else if(["markup","cont","cur","gst","floor","aLen","aWid","aPrice","rcTerm"].includes(t.id))calc();
+  else if(["markup","cont","cur","gst","floor","aLen","aWid","aPrice","rcTerm","cdName","cdPeople","cdDays","cdHours","cdRate"].includes(t.id))calc();
 });
 document.addEventListener("change",e=>{if(["cur","gst","lockCont"].includes(e.target.id))calc()});
 document.addEventListener("click",e=>{
@@ -331,6 +352,8 @@ document.addEventListener("click",e=>{
 $("addMat").onclick=()=>{mats.push(["",1,"ea",0]);render()};
 $("aAdd").onclick=()=>{const L=num($("aLen").value),W=num($("aWid").value);mats.push([`${$("aName").value} (${L}x${W} ft)`,L*W,"sq ft",num($("aPrice").value)]);render();};
 $("addLab").onclick=()=>{labs.push(["",0,0]);render()};
+function crewLine(name,n,d,h,rate){return [`${name} (${n} people x ${d} days x ${h} h)`,n*d*h,rate]}
+$("cdAdd").onclick=()=>{labs.push(crewLine($("cdName").value.trim()||"Crew task",num($("cdPeople").value),num($("cdDays").value),num($("cdHours").value),num($("cdRate").value)));render();};
 $("addCo").onclick=()=>{cos.push(["Change order",0,""]);render()};
 $("addRc").onclick=()=>{rcs.push(["",1,0]);render()};
 $("addOt").onclick=()=>{ots.push(["",1,0]);render()};
