@@ -28,7 +28,7 @@ Prioritization rule: (1) don't break what a customer already reviewed, (2) unblo
 | [x] P2 | Copy-ready client bid (clean itemized text/HTML without internal margin) | All three need to send it out | S |
 | [x] P2 | NZ preset (NZD + GST 15%) roofing/solar template: "Re-roof (NZ)" + area builder ft/m, roof pitch, waste %; scaffolding + flashings checks | Kauri Ridge Roofing (Auckland, up to $70K) | S |
 | [x] P2 | Moving/storage quote template (crew hours, truck, materials, storage months) | Brennan & Daughters (prospect) | S |
-| P3 | Crew rate library (save named crews with rates) | Repeat use | M |
+| [x] P3 | Crew rate library (save named crews with rates) | Repeat use | M |
 
 ## Not building (qualified out)
 - Telecom churn / care triage (Serra Azul): not a bid problem

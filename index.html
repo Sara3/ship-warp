@@ -127,6 +127,17 @@
       <p class="mute" id="cdOut" style="margin:8px 0"></p>
       <button class="primary" id="cdAdd" data-i18n="Add crew-days line">Add crew-days line</button>
     </div>
+    <div style="margin-top:12px;padding:10px;border:1px dashed var(--line);border-radius:8px">
+      <strong style="font-size:14px" data-i18n="Crew rate library">Crew rate library</strong> <span class="mute" data-i18n="(saved in this browser; click a crew to add it as a line)">(saved in this browser; click a crew to add it as a line)</span>
+      <div class="row" style="grid-template-columns:2fr 1fr auto;margin-top:6px;align-items:end">
+        <div><label for="crewName" data-i18n="Crew name">Crew name</label><input id="crewName" placeholder="e.g. Paver install crew"></div>
+        <div><label for="crewRate" data-i18n="Rate / hr">Rate / hr</label><input id="crewRate" type="number" min="0" step="any" placeholder="60"></div>
+        <div><button id="crewSave" data-i18n="Save crew">Save crew</button></div>
+      </div>
+      <div class="actions"><button id="crewFromLines" data-i18n="Save crews from current lines">Save crews from current lines</button></div>
+      <div id="crewList" class="actions"></div>
+      <p class="mute" id="crewMsg" style="margin:6px 0 0"></p>
+    </div>
   </div>
 
   <div class="card" id="coCard">
@@ -258,7 +269,9 @@ const RULES=[
 ];
 const $=id=>document.getElementById(id);
 const ES={"% of direct cost": "% del costo directo", "% of cost + contingency": "% del costo + contingencia", "Itemized contractor bids. See your margin before it goes out the door.": "Presupuestos detallados para contratistas. Vea su margen antes de enviarlo.", "Job": "Obra", "Job name": "Nombre de la obra", "Client": "Cliente", "Scope notes (in your own words)": "Alcance (en sus palabras)", "Start from:": "Empezar con:", "Commercial fit-out": "Acondicionamiento comercial", "Landscape / hardscape": "Paisajismo", "Electrical fit-out": "Instalación eléctrica", "Solar + battery": "Solar + batería", "Enterprise telecom quote": "Cotización telecom empresarial", "Blank": "En blanco", "Save bid": "Guardar", "Duplicate": "Duplicar", "Load": "Abrir", "Delete": "Eliminar", "Bids are saved in this browser only.": "Los presupuestos se guardan solo en este navegador.", "Materials": "Materiales", "Item": "Concepto", "Qty": "Cant.", "Unit": "Unidad", "Unit cost": "Costo unitario", "Markup %": "Margen de ganancia %", "Line total": "Importe", "+ Material line": "+ Agregar partida", "Square-footage line": "Partida por pie cuadrado", "Length (ft)": "Largo (pies)", "Width (ft)": "Ancho (pies)", "Price / sq ft": "Precio / pie²", "Add to bid": "Agregar al presupuesto", "Crew / task": "Cuadrilla / tarea", "Hours": "Horas", "Rate / hr": "Tarifa / hora", "Crew-days line": "Cuadrilla: personas x días x horas", "(people x days x hours/day, instead of a lump pool of hours)": "(en lugar de una bolsa de horas)", "Task": "Tarea", "Crew size (people)": "Personas", "Days": "Días", "Hours / day": "Horas / día", "Add crew-days line": "Agregar cuadrilla", "Change orders": "Órdenes de cambio", "Change order": "Orden de cambio", "Cost": "Costo", "Price": "Precio", "+ Change-order line": "+ Agregar orden de cambio", "Price change orders on their own, with their own markup, so they show separately on the breakdown and don't quietly eat your contingency or margin.": "Cotice las órdenes de cambio por separado, con su propio margen, para que no se coman su contingencia ni su utilidad.", "Recurring & one-time charges": "Cargos recurrentes y únicos", "Contract term (months)": "Plazo (meses)", "Recurring (monthly)": "Recurrentes (mensuales)", "Description": "Descripción", "Monthly unit price": "Precio unitario mensual", "Monthly total": "Total mensual", "+ Recurring line": "+ Agregar partida recurrente", "One-time (installation, setup)": "Únicos (instalación)", "+ One-time line": "+ Agregar cargo único", "Did I forget anything?": "¿Olvidé algo?", "Check for missing lines": "Revisar partidas faltantes", "Checks your scope notes and lines for items contractors commonly miss (disposal, delivery, permits, equipment, inspection...).": "Revisa su alcance y partidas buscando conceptos que se suelen olvidar (desecho, flete, permisos, equipo, inspección...).", "Pricing": "Precios", "Contingency %": "Contingencia %", "Minimum margin floor %": "Margen mínimo %", "Lock contingency": "Bloquear contingencia", "Currency": "Moneda", "Tax": "Impuesto", "Locked (change-order cushion)": "Bloqueada (colchón para cambios)", "Unlocked": "Desbloqueada", "No tax line": "Sin impuesto", "Bid breakdown": "Desglose del presupuesto", "Direct cost": "Costo directo", "Contingency": "Contingencia", "Markup": "Margen de ganancia", "Profit": "Utilidad", "Margin": "Margen", "Copy bid summary": "Copiar resumen", "Recurring & one-time": "Recurrentes y únicos", "Monthly recurring (MRC)": "Mensual recurrente (MRC)", "One-time total (NRC)": "Total único (NRC)", "First-year total": "Total primer año", "Bid total": "Total del presupuesto", "Total ex GST": "Total sin GST", "Final total inc. GST": "Total con GST", "Total contract value": "Valor total del contrato", "Missing:": "Falta:", "Add line": "Agregar partida", "No common items missing. Looks complete.": "No faltan conceptos comunes. Se ve completo.", "Checking...": "Revisando...", "+ Labor line": "+ Agregar partida (mano de obra)", "+ Labour line": "+ Agregar partida (mano de obra)", "Disposal / haul-off / dump fees": "Desecho / retiro de escombro", "Material delivery": "Flete de materiales", "Equipment rental (skid steer, compactor, scissor lift)": "Renta de equipo (minicargador, compactadora, plataforma)", "Permits / council or city approval": "Permisos / licencia municipal", "Inspection, testing and compliance certificate": "Inspección, pruebas y certificado", "Drainage (drain rock, pipe, fabric) behind retaining wall": "Drenaje detrás del muro de contención", "Switchboard upgrade / capacity check": "Actualización de tablero eléctrico", "Change-order / owner-allowance cushion": "Colchón para órdenes de cambio", "Infection control (ICRA) barriers for healthcare work": "Barreras de control de infecciones (ICRA)", "Crane / hoist rental to lift rooftop equipment (grua)": "Renta de grúa / polipasto para subir equipos al techo", "Startup / commissioning (arranque)": "Arranque y puesta en marcha", "Site cleanup / restoration": "Limpieza final de obra", "Travel / mobilization": "Traslado / movilización"};
-Object.assign(ES,{"Moving + storage":"Mudanza + bodega","Valuation / moving insurance coverage":"Seguro de mudanza (cobertura por valor)","Units":"Unidades","Roof pitch (degrees)":"Pendiente del techo (grados)","Waste %":"Desperdicio %","Length (m)":"Largo (m)","Width (m)":"Ancho (m)","Price / m²":"Precio / m²","Price / sq ft":"Precio / pie²",
+Object.assign(ES,{"Crew rate library":"Tarifas de cuadrillas","(saved in this browser; click a crew to add it as a line)":"(guardadas en este navegador; clic para agregar como partida)","Crew name":"Nombre de la cuadrilla","Save crew":"Guardar cuadrilla",
+  "Save crews from current lines":"Guardar partidas de mano de obra como cuadrillas","No saved crews yet.":"Aún no hay cuadrillas guardadas.","Give the crew a name first.":"Primero ponga un nombre a la cuadrilla.","Saved crew":"Cuadrilla guardada","Saved crews":"Cuadrillas guardadas",
+  "No labour lines with a name and rate to save.":"No hay partidas con nombre y tarifa para guardar.","Added":"Agregada","Removed":"Eliminada","Could not save: this browser is blocking local storage.":"No se pudo guardar: este navegador bloquea el almacenamiento local.","Moving + storage":"Mudanza + bodega","Valuation / moving insurance coverage":"Seguro de mudanza (cobertura por valor)","Units":"Unidades","Roof pitch (degrees)":"Pendiente del techo (grados)","Waste %":"Desperdicio %","Length (m)":"Largo (m)","Width (m)":"Ancho (m)","Price / m²":"Precio / m²","Price / sq ft":"Precio / pie²",
   "Scaffolding / edge protection (working at height)":"Andamio / protección perimetral (trabajo en altura)","Flashings, ridging and barge (roofing)":"Tapajuntas y cumbreras (techado)","Copy client bid":"Copiar presupuesto para cliente","Client version: line prices include your markup and contingency. No cost, markup or margin shown.":"Versión para cliente: los precios ya incluyen su margen y contingencia. No muestra costos ni margen.",
   "QUOTE":"COTIZACIÓN","Prepared for":"Para","Date":"Fecha","Scope":"Alcance","TOTAL":"TOTAL","Monthly recurring":"Mensual recurrente","One-time charges":"Cargos únicos","Copied.":"Copiado.","Copy failed; select and copy below.":"No se pudo copiar; seleccione y copie abajo."});
 let LANG="en";
@@ -266,7 +279,7 @@ function tr(s){return LANG==="es"&&ES[s]||s}
 function setLang(l){LANG=l==="es"?"es":"en";document.documentElement.lang=LANG;
   document.querySelectorAll("[data-i18n]").forEach(e=>{const v=tr(e.dataset.i18n);if(e.textContent!==v)e.textContent=v});
   $("langEn").setAttribute("aria-pressed",String(LANG==="en"));$("langEs").setAttribute("aria-pressed",String(LANG==="es"));
-  $("flags").innerHTML="";calc();}
+  $("flags").innerHTML="";calc();if(typeof renderCrews==="function"&&$("crewList"))renderCrews();}
 let mats=[],labs=[],rcs=[],ots=[],cos=[];
 function ov(v){return v===undefined||v===null||String(v).trim()===""?null:num(v)}
 
@@ -505,6 +518,25 @@ function clientBid(){
 }
 $("clientBtn").onclick=()=>{const txt=clientBid();$("clientOut").textContent=txt;$("clientOut").style.display="block";$("clientNote").style.display="block";
   (navigator.clipboard?navigator.clipboard.writeText(txt):Promise.reject()).then(()=>$("copied").textContent=tr("Copied.")).catch(()=>{$("copied").textContent=tr("Copy failed; select and copy below.")});};
+// ---- Crew rate library (this browser only) ----
+const CKEY="bidbench.crews.v1";
+function readCrews(){try{const v=JSON.parse(window.localStorage.getItem(CKEY)||"[]");return Array.isArray(v)?v.filter(c=>c&&typeof c.name==="string"):[]}catch(e){return []}}
+function writeCrews(v){try{window.localStorage.setItem(CKEY,JSON.stringify(v));return true}catch(e){return false}}
+function putCrew(list,name,rate){const i=list.findIndex(c=>c.name.toLowerCase()===name.toLowerCase());if(i>=0)list[i].rate=rate;else list.push({name,rate});}
+function renderCrews(){const L=readCrews();
+  $("crewList").innerHTML=L.length?L.map((c,i)=>`<span style="display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:14px;padding:0 0 0 2px"><button class="chip" style="border:none" data-crew="${i}" title="Add as a labour line">+ ${esc(c.name)} &middot; ${esc(fmt(num(c.rate)))}/h</button><button class="x" data-crewdel="${i}" title="Remove crew">&times;</button></span>`).join("")
+    :`<span class="mute">${esc(tr("No saved crews yet."))}</span>`;}
+function crewMsg(t){$("crewMsg").textContent=t}
+$("crewSave").onclick=()=>{const n=$("crewName").value.trim(),rt=pos($("crewRate").value);if(!n){crewMsg(tr("Give the crew a name first."));return}
+  const L=readCrews();putCrew(L,n,rt);if(writeCrews(L)){crewMsg(`${tr("Saved crew")}: ${n}`);$("crewName").value="";$("crewRate").value="";}else crewMsg(tr("Could not save: this browser is blocking local storage."));renderCrews();};
+$("crewFromLines").onclick=()=>{const L=readCrews();let k=0;labs.forEach(l=>{const n=String(l[0]).trim();if(n&&pos(l[2])>0){putCrew(L,n,pos(l[2]));k++}});
+  if(!k){crewMsg(tr("No labour lines with a name and rate to save."));return}
+  if(writeCrews(L))crewMsg(`${tr("Saved crews")}: ${k}`);else crewMsg(tr("Could not save: this browser is blocking local storage."));renderCrews();};
+document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest("[data-crew],[data-crewdel]");if(!b)return;const L=readCrews();
+  if(b.dataset.crew!==undefined){const c=L[+b.dataset.crew];if(c){labs.push([c.name,8,num(c.rate)]);render();crewMsg(`${tr("Added")}: ${c.name} (8 h)`)}}
+  else{const c=L.splice(+b.dataset.crewdel,1)[0];writeCrews(L);renderCrews();if(c)crewMsg(`${tr("Removed")}: ${c.name}`)}});
+$("cur").addEventListener("change",renderCrews);
+
 $("copyBtn").onclick=()=>{
   const b=window.__bid;
   const txt=[`BID: ${$("job").value} for ${$("client").value}`,
@@ -520,6 +552,7 @@ $("copyBtn").onclick=()=>{
 };
 load("landscape");
 refreshSaved();
+renderCrews();
 </script>
 </body>
 </html>

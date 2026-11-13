@@ -393,6 +393,34 @@ const startsWithMoney = (s, m) => s === m || s.startsWith(m + " ");
   ok(!/Valuation/.test(t.txt("flags")), "valuation not flagged for landscape");
 }
 
+// ---------- P3: crew rate library ----------
+{
+  const t = boot();
+  const crews = () => JSON.parse(t.w.localStorage.getItem("bidbench.crews.v1") || "[]");
+  t.preset("landscape");
+  ok(/No saved crews/.test(t.txt("crewList")), "empty crew library hint");
+  t.$("crewSave").click();
+  ok(/name first/.test(t.txt("crewMsg")), "crew needs a name");
+  t.set("crewName", "Paver crew <b>"); t.set("crewRate", "62");
+  t.$("crewSave").click();
+  eq(crews().length, 1, "crew saved");
+  ok(!t.$("crewList").innerHTML.includes("<b>"), "crew name escaped");
+  const n = t.d.querySelectorAll("#labTable tbody tr").length;
+  t.d.querySelector("[data-crew]").click();
+  const rows = t.d.querySelectorAll("#labTable tbody tr"), last = rows[rows.length - 1];
+  eq(rows.length, n + 1, "clicking crew adds a labour line");
+  eq(last.querySelector('input[data-f="2"]').value, "62", "crew rate used");
+  t.$("crewFromLines").click();
+  eq(crews().length, 4, "save current labor lines as crews (3 + existing, de-duplicated)");
+  t.$("crewFromLines").click();
+  eq(crews().length, 4, "re-saving does not duplicate crews");
+  t.d.querySelector("[data-crewdel]").click();
+  eq(crews().length, 3, "remove crew");
+  const t2 = boot({ "bidbench.crews.v1": "[[[bad" });
+  ok(/No saved crews/.test(t2.txt("crewList")), "corrupt crew storage does not break page");
+  eq(t2.txt("sTotal"), "$12,772.32", "page fine with corrupt crew storage");
+}
+
 // @@NEXT@@
 
 console.log(`${failures ? "FAILED" : "PASSED"}: ${passes} passed, ${failures} failed`);
