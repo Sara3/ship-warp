@@ -64,6 +64,7 @@
       <div><label for="eAmt">Amount ($)</label><input id="eAmt" type="number" min="0.01" step="0.01" placeholder="0.00"></div>
       <div><label for="eDate">Date (optional)</label><input id="eDate" type="date"></div>
     </div>
+    <div style="margin-top:8px;max-width:320px"><label for="eProp">Property / location (optional)</label><input id="eProp" list="propList" placeholder="e.g. Desert Palms" autocomplete="off"><datalist id="propList"></datalist></div>
     <div class="actions"><button class="primary" id="addBtn">Add expense</button><span class="err" id="eErr" role="alert"></span><span class="mute" id="addMsg" role="status"></span></div>
   </div>
 
@@ -83,6 +84,12 @@
     <p class="mute">Near limit = the "Warn at" % of the budget is spent (default 80%, set anywhere from 50% to 100% per category). Over budget = spent more than the budget.</p>
   </div>
 
+  <div class="card" id="propCard">
+    <h2>Spend by property</h2>
+    <table id="propTable"><thead><tr><th>Property / location</th><th class="num">Expenses</th><th class="num">Spent</th><th>Top category</th></tr></thead><tbody></tbody></table>
+    <p class="mute" id="propEmpty">Tag expenses with a property or location to see a subtotal for each one.</p>
+  </div>
+
   <div class="card">
     <h2>Expenses</h2>
     <div class="actions" style="margin-top:0">
@@ -91,7 +98,7 @@
       <span class="mute" id="listMsg" role="status"></span>
     </div>
     <table id="expTable" style="margin-top:10px">
-      <thead><tr><th>Date</th><th>Description</th><th>Category</th><th class="num">Amount</th><th></th></tr></thead>
+      <thead><tr><th>Date</th><th>Description</th><th>Category</th><th>Property</th><th class="num">Amount</th><th></th></tr></thead>
       <tbody></tbody>
     </table>
     <p class="mute" id="expEmpty">No expenses yet.</p>
@@ -116,7 +123,7 @@ const newId=()=>"x"+now().toString(36)+(seq++).toString(36);
 // ---- Storage ----
 function save(){try{window.localStorage.setItem(KEY,JSON.stringify({expenses,budgets,warn}))}catch(e){}}
 function load(){try{const v=JSON.parse(window.localStorage.getItem(KEY));if(!v||!Array.isArray(v.expenses))return null;
-  return {expenses:v.expenses.filter(x=>x&&num(x.amount)>0).map(x=>({id:String(x.id||newId()),desc:String(x.desc||""),cat:String(x.cat||"Uncategorized"),amount:r2(num(x.amount)),date:String(x.date||"")})),
+  return {expenses:v.expenses.filter(x=>x&&num(x.amount)>0).map(x=>({id:String(x.id||newId()),desc:String(x.desc||""),cat:String(x.cat||"Uncategorized"),amount:r2(num(x.amount)),date:String(x.date||""),...(x.prop?{prop:String(x.prop).slice(0,80)}:{})})),
     budgets:v.budgets&&typeof v.budgets==="object"?Object.fromEntries(Object.entries(v.budgets).map(([k,b])=>[k,b===null||b===""?null:Math.max(0,num(b))])):{},
     warn:v.warn&&typeof v.warn==="object"?Object.fromEntries(Object.entries(v.warn).filter(([,w])=>isFinite(num(w))).map(([k,w])=>[k,Math.min(100,Math.max(50,num(w)))])):{}};}catch(e){return null}}
 
@@ -162,8 +169,13 @@ function render(){
   $("overBanner").style.display=over.length?"block":"none";
   $("overBanner").innerHTML=over.length?`OVER BUDGET: ${over.map(x=>`${esc(x.cat)} (by ${money(-x.left)})`).join(", ")}. Fix before month-end close.`:"";
   const rows=expenses.slice().sort((a,b)=>String(b.date).localeCompare(String(a.date)));
-  $("expTable").querySelector("tbody").innerHTML=rows.map(e=>`<tr data-exp="${esc(e.id)}"><td>${esc(e.date)}</td><td>${esc(e.desc)}</td><td>${esc(catName(e.cat))}</td><td class="num">${money(e.amount)}</td><td><button class="x" title="Delete expense" data-del="${esc(e.id)}">&times;</button></td></tr>`).join("");
+  $("expTable").querySelector("tbody").innerHTML=rows.map(e=>`<tr data-exp="${esc(e.id)}"><td>${esc(e.date)}</td><td>${esc(e.desc)}</td><td>${esc(catName(e.cat))}</td><td>${esc(e.prop||"")}</td><td class="num">${money(e.amount)}</td><td><button class="x" title="Delete expense" data-del="${esc(e.id)}">&times;</button></td></tr>`).join("");
   $("expEmpty").style.display=expenses.length?"none":"block";
+  const P={};expenses.forEach(e=>{const k=(e.prop||"").trim();if(!k)return;const q=P[k]||(P[k]={n:0,s:0,c:{}});q.n++;q.s=r2(q.s+e.amount);const c=catName(e.cat);q.c[c]=r2((q.c[c]||0)+e.amount);});
+  const PK=Object.keys(P).sort((a,b)=>P[b].s-P[a].s||a.localeCompare(b));
+  $("propList").innerHTML=PK.map(k=>`<option value="${esc(k)}">`).join("");
+  $("propTable").querySelector("tbody").innerHTML=PK.map(k=>{const q=P[k],top=Object.entries(q.c).sort((a,b)=>b[1]-a[1])[0];return `<tr data-prop="${esc(k)}"><td><strong>${esc(k)}</strong></td><td class="num">${q.n}</td><td class="num" data-cell="pspent">${money(q.s)}</td><td>${esc(top[0])} (${money(top[1])})</td></tr>`}).join("");
+  $("propEmpty").style.display=PK.length?"none":"block";$("propTable").style.display=PK.length?"":"none";
   window.__spend={total,budget:bud,cats:S};
   save();
 }
@@ -177,10 +189,10 @@ $("addBtn").onclick=()=>{["eAmt","eCat","eDesc"].forEach(i=>$(i).classList.remov
   if(!(amt>0)||!isFinite(Number(amtRaw))){errs.push("Amount must be more than $0.");$("eAmt").classList.add("bad")}
   if(errs.length){$("eErr").textContent=errs.join(" ");msg("addMsg","");return}
   $("eErr").textContent="";
-  const e={id:newId(),desc,cat,amount:r2(amt),date:$("eDate").value||today()};expenses.push(e);
+  const prop=$("eProp").value.trim().slice(0,80);const e={id:newId(),desc,cat,amount:r2(amt),date:$("eDate").value||today()};if(prop)e.prop=prop;expenses.push(e);
   if(!(cat in budgets)&&!Object.keys(budgets).some(k=>k.toLowerCase()===cat.toLowerCase()))budgets[cat]=null;
   render();msg("addMsg",`Added ${esc(money(e.amount))} to ${esc(cat)}.`);
-  ["eDesc","eCat","eAmt","eDate"].forEach(i=>$(i).value="");paintSuggest();};
+  ["eDesc","eCat","eAmt","eDate","eProp"].forEach(i=>$(i).value="");paintSuggest();};
 $("eDesc").addEventListener("input",paintSuggest);$("eCat").addEventListener("input",paintSuggest);
 $("bAdd").onclick=()=>{const c=catName($("bCat").value),raw=$("bAmt").value,b=num(raw);
   if(!c){$("bErr").textContent="Type a category.";return}

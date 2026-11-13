@@ -129,5 +129,17 @@ const EMPTY = JSON.stringify({ expenses: [], budgets: {} });
   ok(/suggested:/.test(t.txt("eSuggest")) && t.txt("eSuggest").includes("Travel"), "local keyword suggestion labelled suggested");
   t.$("useSug").click(); eq(t.$("eCat").value, "Travel", "use suggestion fills category");
 }
+// Ocotillo: property tag + subtotals
+{
+  const t = boot(EMPTY);
+  t.set("eProp", "Desert Palms"); t.add("Plumbing repair", "Plumbing", 400);
+  t.set("eProp", "Desert Palms"); t.add("AC fix", "HVAC", 250);
+  t.set("eProp", "Saguaro Point"); t.add("Unit turn paint", "Turns", 300);
+  eq(t.d.querySelector('#propTable tr[data-prop="Desert Palms"] [data-cell="pspent"]').textContent, "$650.00", "property subtotal");
+  eq(t.d.querySelector('#propTable tr[data-prop="Saguaro Point"] [data-cell="pspent"]').textContent, "$300.00", "second property subtotal");
+  ok(t.txt("expTable").includes("Desert Palms"), "property shown on expense row");
+  const t2 = boot(t.w.localStorage.getItem("spendwise.v1"));
+  ok(!!t2.d.querySelector('#propTable tr[data-prop="Desert Palms"]'), "property remembered");
+}
 console.log(`${failures ? "FAILED" : "PASSED"}: ${passes} passed, ${failures} failed (spend)`);
 process.exit(failures ? 1 : 0);
