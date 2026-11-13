@@ -61,15 +61,15 @@ const EMPTY = JSON.stringify({ expenses: [], budgets: {} });
 // budgets: remaining, near limit, over budget banner appears/disappears
 {
   const t = boot(EMPTY);
-  t.add("Paper", "Office supplies", 80);
+  t.add("Paper", "Office supplies", 75);
   eq(t.cell("Office supplies", "status"), "No budget set", "no budget yet");
   t.budget("Office supplies", "100");
-  eq(t.cell("Office supplies", "left"), "$20.00 left", "remaining");
-  eq(t.cell("Office supplies", "status"), "On track", "on track below 90%");
+  eq(t.cell("Office supplies", "left"), "$25.00 left", "remaining");
+  eq(t.cell("Office supplies", "status"), "On track", "on track below 80%");
   t.add("Pens", "Office supplies", 10);
-  ok(/Near limit/.test(t.cell("Office supplies", "status")), "near limit at 90%");
+  ok(/Near limit/.test(t.cell("Office supplies", "status")), "near limit at 80%");
   eq(t.$("overBanner").style.display, "none", "no banner when not over");
-  t.add("Toner", "Office supplies", 25.5);
+  t.add("Toner", "Office supplies", 30.5);
   eq(t.cell("Office supplies", "status"), "OVER BUDGET by $15.50", "over budget warning");
   eq(t.cell("Office supplies", "left"), "over by $15.50", "remaining shows over");
   ok(t.$("overBanner").style.display !== "none" && t.txt("overBanner").includes("Office supplies (by $15.50)"), "top banner lists over-budget category");
@@ -107,9 +107,9 @@ const EMPTY = JSON.stringify({ expenses: [], budgets: {} });
   // Hollow Oak: per-category warn threshold
   eq(t.cell("Ads", "status"), "Near limit: 78% of budget used (warns at 75%)", "Ads warns at 75% in sample");
   eq(t.row("Ads").querySelector("[data-warn]").value, "75", "Ads warn input shows 75");
-  eq(t.row("Travel").querySelector("[data-warn]").value, "90", "default warn 90%");
-  eq(t.cell("Travel", "status"), "On track", "Travel 87% under default 90%");
-  eq(t.cell("Office supplies", "status"), "Near limit: 90% of budget used (warns at 90%)", "default 90% near-limit text");
+  eq(t.row("Travel").querySelector("[data-warn]").value, "80", "default warn 80%");
+  eq(t.cell("Travel", "status"), "Near limit: 87% of budget used (warns at 80%)", "Travel 87% over default 80%");
+  eq(t.cell("Office supplies", "status"), "Near limit: 90% of budget used (warns at 80%)", "default 80% near-limit text");
   t.set(t.row("Ads").querySelector("[data-warn]"), "80");
   eq(t.cell("Ads", "status"), "On track", "raising warn to 80% clears the warning");
   t.set(t.row("Travel").querySelector("[data-warn]"), "85");

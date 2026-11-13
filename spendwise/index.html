@@ -80,7 +80,7 @@
       <input id="bAmt" type="number" min="0" step="0.01" placeholder="Budget $" style="max-width:140px" aria-label="Budget amount">
       <button id="bAdd">Set budget</button><span class="err" id="bErr" role="alert"></span>
     </div>
-    <p class="mute">Near limit = the "Warn at" % of the budget is spent (default 90%, set anywhere from 50% to 100% per category). Over budget = spent more than the budget.</p>
+    <p class="mute">Near limit = the "Warn at" % of the budget is spent (default 80%, set anywhere from 50% to 100% per category). Over budget = spent more than the budget.</p>
   </div>
 
   <div class="card">
@@ -109,7 +109,7 @@ function r2(n){return Math.round(n*100)/100}
 function now(){return typeof window.__now==="function"?window.__now():Date.now()}
 function today(){const d=new Date(now());return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
 let expenses=[],budgets={},warn={},undo=null,seq=0;
-const WARN_DEFAULT=90;
+const WARN_DEFAULT=80;
 function warnAt(c){const v=warn[c];return v===undefined||v===null||!isFinite(v)?WARN_DEFAULT:Math.min(100,Math.max(50,v))}
 const newId=()=>"x"+now().toString(36)+(seq++).toString(36);
 
