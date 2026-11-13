@@ -12,7 +12,11 @@ function ok(cond, msg) { if (cond) { passes++; } else { failures++; console.erro
 function eq(a, b, msg) { ok(a === b, `${msg}: expected ${JSON.stringify(b)}, got ${JSON.stringify(a)}`); }
 
 function boot() {
-  const dom = new JSDOM(SRC, { runScripts: "dangerously", url: "http://localhost/", pretendToBeVisual: true });
+  const { VirtualConsole } = require("jsdom");
+  const vc = new VirtualConsole();
+  vc.on("jsdomError", e => { if (!/Not implemented/.test(e.message)) ok(false, "page script error: " + e.message); });
+  vc.on("error", e => ok(false, "console.error on page: " + e));
+  const dom = new JSDOM(SRC, { runScripts: "dangerously", url: "http://localhost/", pretendToBeVisual: true, virtualConsole: vc });
   const w = dom.window, d = w.document;
   const $ = id => d.getElementById(id);
   const set = (id, v) => { const el = typeof id === "string" ? $(id) : id; el.value = v;
@@ -121,6 +125,37 @@ const startsWithMoney = (s, m) => s === m || s.startsWith(m + " ");
   t.$("auGst").click();
   eq(t.txt("totalLabel"), "Bid total", "AU toggle off removes GST");
   eq(t.txt("sTotal"), "AUD $12,772.32", "AU toggle off total");
+}
+
+// ---------- Recurring vs one-time (Kallang Pacific Telecom) ----------
+{
+  const t = boot();
+  t.preset("landscape");
+  ok(!t.shown("rcSummary"), "recurring summary hidden when section empty");
+  eq(t.txt("sTotal"), "$12,772.32", "landscape total unaffected by recurring section");
+  t.preset("telecom");
+  ok(t.shown("rcSummary"), "recurring summary shown for telecom");
+  eq(t.$("cur").value, "USD", "telecom USD"); eq(t.$("gst").value, "0", "telecom no GST");
+  eq(t.$("rcTerm").value, "36", "telecom term 36");
+  eq(t.txt("rcMrc"), "$22,750.00", "MRC");
+  eq(t.txt("rcNrc"), "$35,000.00", "NRC (one-time never in monthly)");
+  eq(t.txt("rcFy"), "$308,000.00", "first-year = MRC x 12 + NRC");
+  eq(t.txt("rcTcv"), "$854,000.00", "TCV = MRC x 36 + NRC");
+  ok(t.$("rcSummary").textContent.includes("Total contract value"), "TCV label");
+  t.set("rcTerm", "6");
+  eq(t.txt("rcFy"), "$171,500.00", "first-year uses min(12, term)");
+  eq(t.txt("rcTcv"), "$171,500.00", "TCV at 6 months");
+  t.set("rcTerm", "36");
+  // edit a recurring qty
+  const q = t.d.querySelector('#rcTable input[data-f="1"]'); t.set(q, "10");
+  eq(t.txt("rcMrc"), "$5,950.00", "MRC updates on qty edit");
+  t.$("addOt").click();
+  eq(t.d.querySelectorAll("#otTable tbody tr").length, 3, "add one-time line");
+  t.d.querySelector('#otTable [data-del="o"]').click();
+  eq(t.txt("rcNrc"), "$2,500.00", "remove one-time line");
+  eq(t.txt("rcMrc"), "$5,950.00", "MRC unchanged by one-time edits");
+  t.preset("landscape");
+  ok(!t.shown("rcSummary"), "switching template clears recurring section");
 }
 
 // @@NEXT@@

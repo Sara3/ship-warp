@@ -65,6 +65,7 @@
       <button data-preset="landscape">Landscape / hardscape</button>
       <button data-preset="electrical">Electrical fit-out</button>
       <button data-preset="solar">Solar + battery</button>
+      <button data-preset="telecom">Enterprise telecom quote</button>
       <button data-preset="blank">Blank</button>
     </div>
   </div>
@@ -92,6 +93,18 @@
     <div class="actions"><button id="addLab">+ <span class="lw">Labor</span> line</button></div>
   </div>
 
+  <div class="card" id="rcCard">
+    <h2>Recurring &amp; one-time charges</h2>
+    <p class="mute" style="margin-top:0">For service contracts (telecom, managed services). Monthly charges and one-time charges are kept separate and never added together into the monthly figure.</p>
+    <div style="max-width:200px"><label for="rcTerm">Contract term (months)</label><input id="rcTerm" type="number" min="1" step="1" value="36"></div>
+    <h3 style="font-size:13px;margin:12px 0 4px">Recurring (monthly)</h3>
+    <table id="rcTable"><thead><tr><th>Description</th><th class="num">Qty</th><th class="num">Monthly unit price</th><th class="num">Monthly total</th><th></th></tr></thead><tbody></tbody></table>
+    <div class="actions"><button id="addRc">+ Recurring line</button></div>
+    <h3 style="font-size:13px;margin:12px 0 4px">One-time (installation, setup)</h3>
+    <table id="otTable"><thead><tr><th>Description</th><th class="num">Qty</th><th class="num">Unit price</th><th class="num">Line total</th><th></th></tr></thead><tbody></tbody></table>
+    <div class="actions"><button id="addOt">+ One-time line</button></div>
+  </div>
+
   <div class="card">
     <h2>Did I forget anything?</h2>
     <p class="mute" style="margin-top:0">Checks your scope notes and lines for items contractors commonly miss (disposal, delivery, permits, equipment, inspection...).</p>
@@ -113,6 +126,15 @@
       <div><label for="gst">Tax</label>
         <select id="gst"><option value="0">No tax line</option><option value="10">GST 10% (AU)</option><option value="15">GST 15% (NZ)</option></select></div>
     </div>
+  </div>
+
+  <div class="card sum" id="rcSummary" style="display:none">
+    <h2>Recurring &amp; one-time</h2>
+    <div><span>Monthly recurring (MRC)</span><span><span id="rcMrc"></span> /mo</span></div>
+    <div><span>One-time total (NRC)</span><span id="rcNrc"></span></div>
+    <div><span id="rcFyLabel">First-year total</span><span id="rcFy"></span></div>
+    <div class="total"><span id="rcTcvLabel">Total contract value</span><span id="rcTcv"></span></div>
+    <p class="mute" style="margin:6px 0 0">First year = MRC x <span id="rcFyMonths">12</span> months + one-time. Contract value = MRC x <span id="rcTermOut">36</span> months + one-time. Separate from the project bid breakdown below.</p>
   </div>
 
   <div class="card sum" id="summary">
@@ -153,6 +175,9 @@ const PRESETS={
   fitout:{job:"Healthcare clinic tenant fit-out",desc:"4,000 sq ft clinic fit-out: framing, drywall, ceilings, doors, finish carpentry, flooring, paint. Occupied building.",
     mats:[["Metal studs + track",4000,"sq ft",1.35],["Drywall + finishing",9000,"sq ft",0.95],["Acoustic ceiling grid + tile",4000,"sq ft",3.2],["Doors, frames + hardware",14,"ea",1150],["Flooring (LVT + sheet vinyl)",4000,"sq ft",5.5],["Paint",9000,"sq ft",0.45]],
     labs:[["Framing crew",320,68],["Drywall crew",360,62],["Finish carpentry",160,72],["Project supervision",120,85]],markup:12,cont:8,cur:"USD",gst:"0"},
+  telecom:{job:"Enterprise fiber + managed routers, 50 sites",client:"Enterprise (bank)",desc:"50-site business fiber 1Gbps with managed router per site, 36-month term. One-time installation per site plus site survey.",
+    mats:[],labs:[],markup:20,cont:10,cur:"USD",gst:"0",term:36,
+    rcs:[["Business fiber 1Gbps",50,420],["Managed router",50,35]],ots:[["Installation",50,650],["Site survey",1,2500]]},
   blank:{job:"",desc:"",mats:[["",1,"ea",0]],labs:[["",0,0]],markup:20,cont:10,cur:"USD",gst:"0"}
 };
 const RULES=[
@@ -169,7 +194,7 @@ const RULES=[
   {k:"travel",t:"Travel / mobilization",match:/travel|mobili|call-?out/i,when:/./,addLab:["Travel / mobilization",2,60]}
 ];
 const $=id=>document.getElementById(id);
-let mats=[],labs=[];
+let mats=[],labs=[],rcs=[],ots=[];
 
 function fmt(n){const c=$("cur").value;return (c==="USD"?"$":c+" $")+n.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}
 function labWord(){return ["AUD","NZD"].includes($("cur").value)?"Labour":"Labor"}
@@ -192,6 +217,14 @@ function render(){
     <td class="num"><input aria-label="Rate per hour" type="number" step="any" style="width:90px" value="${l[2]}" data-t="l" data-i="${i}" data-f="2"></td>
     <td class="num" id="lt${i}"></td>
     <td><button class="x" title="Remove line" data-del="l" data-i="${i}">&times;</button></td></tr>`).join("");
+  [["rcTable",rcs,"r","Recurring","Monthly unit price"],["otTable",ots,"o","One-time","Unit price"]].forEach(([tid,arr,k,nm,pl])=>{
+    $(tid).style.display=arr.length?"":"none";
+    $(tid).querySelector("tbody").innerHTML=arr.map((x,i)=>`<tr>
+    <td><input aria-label="${nm} description" value="${esc(x[0])}" data-t="${k}" data-i="${i}" data-f="0"></td>
+    <td class="num"><input aria-label="${nm} quantity" type="number" step="any" style="width:80px" value="${esc(x[1])}" data-t="${k}" data-i="${i}" data-f="1"></td>
+    <td class="num"><input aria-label="${pl}" type="number" step="any" style="width:100px" value="${esc(x[2])}" data-t="${k}" data-i="${i}" data-f="2"></td>
+    <td class="num" id="${k}t${i}"></td>
+    <td><button class="x" title="Remove line" data-del="${k}" data-i="${i}">&times;</button></td></tr>`).join("");});
   calc();
 }
 
@@ -227,6 +260,15 @@ function calc(){
   $("auGst").setAttribute("aria-pressed",String(g===10&&$("cur").value==="AUD"));
   const aL=num($("aLen").value),aW=num($("aWid").value),aP=num($("aPrice").value),aA=aL*aW;
   $("aOut").textContent=`${aL} ft x ${aW} ft = ${aA.toLocaleString()} sq ft x ${fmt(aP)}/sq ft = ${fmt(aA*aP)}`;
+  let mrc=0,nrc=0;
+  rcs.forEach((x,i)=>{const t=num(x[1])*num(x[2]);mrc+=t;const c=$("rt"+i);if(c)c.textContent=fmt(t)+" /mo"});
+  ots.forEach((x,i)=>{const t=num(x[1])*num(x[2]);nrc+=t;const c=$("ot"+i);if(c)c.textContent=fmt(t)});
+  const term=Math.max(0,num($("rcTerm").value)),fyM=Math.min(12,term);
+  const fy=mrc*fyM+nrc,tcv=mrc*term+nrc;
+  $("rcSummary").style.display=(rcs.length||ots.length)?"block":"none";
+  $("rcMrc").textContent=fmt(mrc);$("rcNrc").textContent=fmt(nrc);$("rcFy").textContent=fmt(fy);$("rcTcv").textContent=fmt(tcv);
+  $("rcFyMonths").textContent=fyM;$("rcTermOut").textContent=term;$("rcTcvLabel").textContent=`Total contract value (${term} mo)`;
+  window.__rc={mrc,nrc,firstYear:fy,tcv,term};
   window.__bid={materials:mat,labor:lab,direct,contingency:cont,markup:mark,gst,total,profit,marginPct:margin,floorPct:floor,belowFloor:below};
 }
 
@@ -234,25 +276,29 @@ function load(p){
   const P=PRESETS[p];
   $("job").value=P.job;$("desc").value=P.desc;
   mats=P.mats.map(r=>r.slice());labs=P.labs.map(r=>r.slice());
+  rcs=(P.rcs||[]).map(r=>r.slice());ots=(P.ots||[]).map(r=>r.slice());$("rcTerm").value=P.term||36;
+  if(P.client)$("client").value=P.client;
   $("markup").value=P.markup;$("cont").value=P.cont;$("cur").value=P.cur;$("gst").value=P.gst;
   $("flags").innerHTML="";render();
 }
 
 document.addEventListener("input",e=>{
-  const t=e.target;if(t.dataset.t){const arr=t.dataset.t==="m"?mats:labs;const f=+t.dataset.f;
+  const t=e.target;if(t.dataset.t){const arr={m:mats,l:labs,r:rcs,o:ots}[t.dataset.t];const f=+t.dataset.f;
     arr[+t.dataset.i][f]=(t.type==="number")?t.value:t.value;calc();}
-  else if(["markup","cont","cur","gst","floor","aLen","aWid","aPrice"].includes(t.id))calc();
+  else if(["markup","cont","cur","gst","floor","aLen","aWid","aPrice","rcTerm"].includes(t.id))calc();
 });
 document.addEventListener("change",e=>{if(["cur","gst","lockCont"].includes(e.target.id))calc()});
 document.addEventListener("click",e=>{
   const t=e.target;
   if(t.dataset.preset)load(t.dataset.preset);
-  if(t.dataset.del){(t.dataset.del==="m"?mats:labs).splice(+t.dataset.i,1);render();}
+  if(t.dataset.del){({m:mats,l:labs,r:rcs,o:ots}[t.dataset.del]).splice(+t.dataset.i,1);render();}
   if(t.dataset.addrule!==undefined){const r=RULES[+t.dataset.addrule];if(r.add)mats.push(r.add.slice());if(r.addLab)labs.push(r.addLab.slice());render();t.closest(".flag").remove();}
 });
 $("addMat").onclick=()=>{mats.push(["",1,"ea",0]);render()};
 $("aAdd").onclick=()=>{const L=num($("aLen").value),W=num($("aWid").value);mats.push([`${$("aName").value} (${L}x${W} ft)`,L*W,"sq ft",num($("aPrice").value)]);render();};
 $("addLab").onclick=()=>{labs.push(["",0,0]);render()};
+$("addRc").onclick=()=>{rcs.push(["",1,0]);render()};
+$("addOt").onclick=()=>{ots.push(["",1,0]);render()};
 $("auGst").onclick=()=>{const on=$("auGst").getAttribute("aria-pressed")==="true";
   if(on){$("gst").value="0"}else{$("cur").value="AUD";$("gst").value="10"}calc();};
 
@@ -289,7 +335,10 @@ $("copyBtn").onclick=()=>{
     ...mats.filter(m=>m[0]).map(m=>`  ${m[0]}: ${m[1]} ${m[2]} x ${fmt(num(m[3]))} = ${fmt(num(m[1])*num(m[3]))}`),
     ...labs.filter(l=>l[0]).map(l=>`  ${l[0]}: ${l[1]} hrs x ${fmt(num(l[2]))} = ${fmt(num(l[1])*num(l[2]))}`),
     `Materials ${fmt(b.materials)} | ${labWord()} ${fmt(b.labor)} | Contingency ${fmt(b.contingency)} | Markup ${fmt(b.markup)}`+(b.gst?` | GST ${fmt(b.gst)}`:""),
-    `TOTAL ${fmt(b.total)} | Profit ${fmt(b.profit)} | Margin ${b.marginPct.toFixed(1)}%`].join("\n");
+    `TOTAL ${fmt(b.total)} | Profit ${fmt(b.profit)} | Margin ${b.marginPct.toFixed(1)}%`,
+    ...((rcs.length||ots.length)?["RECURRING (monthly):",...rcs.filter(x=>x[0]).map(x=>`  ${x[0]}: ${x[1]} x ${fmt(num(x[2]))}/mo = ${fmt(num(x[1])*num(x[2]))}/mo`),
+      "ONE-TIME:",...ots.filter(x=>x[0]).map(x=>`  ${x[0]}: ${x[1]} x ${fmt(num(x[2]))} = ${fmt(num(x[1])*num(x[2]))}`),
+      `MRC ${fmt(window.__rc.mrc)}/mo | One-time ${fmt(window.__rc.nrc)} | First year ${fmt(window.__rc.firstYear)} | Contract value (${window.__rc.term} mo) ${fmt(window.__rc.tcv)}`]:[])].join("\n");
   (navigator.clipboard?navigator.clipboard.writeText(txt):Promise.reject()).then(()=>$("copied").textContent="Copied.").catch(()=>{$("copied").textContent="Copy failed; select and copy below.";$("copied").innerText=txt});
 };
 load("landscape");
