@@ -322,6 +322,48 @@ function boot({ fetch, seed, escSeed } = {}) {
     ok(/AI unavailable/.test(t.row("Assinante #1188").textContent), "fallback text renders in English after switching");
   }
 
+  // ---------- Spokehub: outcomes (saved / lost), board summary ----------
+  {
+    const t = boot({ seed: "[]" });
+    t.$("sampleBtn").click();
+    const mark = (name, kind) => t.d.querySelector(`#atRisk [data-oid="${t.row(name).dataset.row}"][data-outcome="${kind}"]`).click();
+    eq(t.txt("rSaved"), "$0 / month (0 accounts)", "saved starts at 0");
+    eq(t.txt("rLost"), "$0 / month (0 accounts)", "lost starts at 0");
+    eq(t.txt("boardOut"), "At risk now: $26,150/mo across 7 accounts (3 red, 4 amber). Saved this period: $0/mo (0). Lost: $0/mo (0). Save rate: n/a of resolved at-risk revenue.", "board summary before outcomes");
+    mark("Northwind Dental Group", "saved");
+    eq(t.txt("rRisk"), "$12,100", "saved account leaves revenue at risk");
+    eq(t.txt("rSaved"), "$4,800 / month (1 account)", "revenue saved");
+    ok(!names(t).includes("Northwind Dental Group"), "saved account leaves at-risk list");
+    ok(t.txt("outcomeList").includes("Northwind Dental Group"), "saved account in Outcomes");
+    eq(t.txt("rTotal"), "$29,130", "saved account still counts toward total revenue");
+    mark("Meridian Freight", "lost");
+    eq(t.txt("rRisk"), "$5,200", "lost account leaves revenue at risk");
+    eq(t.txt("rLost"), "$6,900 / month (1 account)", "revenue lost");
+    eq(t.txt("rTotal"), "$22,230", "lost account no longer in total revenue");
+    eq(t.txt("cRed"), "1", "red tile counts open accounts");
+    mark("Kestrel Analytics", "saved");
+    eq(t.txt("rSaved"), "$7,550 / month (2 accounts)", "two saved");
+    eq(t.txt("rAmber"), "$6,500", "saved amber leaves amber revenue");
+    eq(t.health("Kestrel Analytics"), "Amber", "R/A/G rule unchanged for resolved accounts");
+    eq(t.txt("boardOut"), "At risk now: $11,700/mo across 4 accounts (1 red, 3 amber). Saved this period: $7,550/mo (2). Lost: $6,900/mo (1). Save rate: 52% of resolved at-risk revenue.", "board summary numbers");
+    t.$("boardCopy").click();
+    ok(t.$("boardOut").style.display !== "none" && t.txt("boardOut").startsWith("At risk now:"), "Copy shows the board text on the page");
+    // undo
+    t.d.querySelector(`#outcomeList [data-undooutcome="${t.row("Meridian Freight").dataset.row}"]`).click();
+    eq(t.txt("rRisk"), "$12,100", "undo restores revenue at risk");
+    eq(t.txt("rLost"), "$0 / month (0 accounts)", "undo clears lost");
+    ok(names(t).includes("Meridian Freight"), "undo puts account back on at-risk list");
+    eq(t.txt("rTotal"), "$29,130", "undo restores total");
+    // persisted
+    const t2 = boot({ seed: t.w.localStorage.getItem("churnradar.accounts.v1") });
+    eq(t2.txt("rSaved"), "$7,550 / month (2 accounts)", "outcomes remembered in this browser");
+    // Portuguese board summary
+    t.$("langPt").click();
+    ok(t.txt("boardOut").startsWith("Em risco agora: R$ 18.600/mês em 5 contas (2 vermelhas, 3 amarelas)."), `PT board summary (got ${t.txt("boardOut")})`);
+    ok(t.txt("rSaved").includes("R$ 7.550 / mês (2 contas)"), "PT saved figure");
+    t.$("langEn").click();
+  }
+
   console.log(`${failures ? "FAILED" : "PASSED"}: ${passes} passed, ${failures} failed (churn)`);
   process.exit(failures ? 1 : 0);
 })();

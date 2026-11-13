@@ -67,6 +67,10 @@
   .chip[aria-pressed="true"]{background:var(--acc);color:#fff;border-color:var(--acc)}
   header .chip{background:transparent;color:#fff;border-color:#6b6a64}
   header .chip[aria-pressed="true"]{background:var(--acc);border-color:var(--acc)}
+  .outc{display:inline-block;border-radius:12px;padding:1px 8px;font-size:12px;font-weight:700}
+  .outc.saved{background:var(--grnbg);color:var(--grn)} .outc.lost{background:#ecebe7;color:var(--mute)}
+  .oc{border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin:6px 0;font-size:14px}
+  .oc.saved{border-left:5px solid var(--grn)} .oc.lost{border-left:5px solid #8a8983}
   footer{text-align:center;padding:20px;color:var(--mute);font-size:13px}
 </style>
 </head>
@@ -82,6 +86,7 @@
     <div><div class="lbl" data-i18n="Monthly revenue at risk">Monthly revenue at risk</div><div class="big" id="rRisk">$0</div><div class="mute" data-i18n="Sum of the monthly bill across Red accounts">Sum of the monthly bill across Red accounts</div></div>
     <div class="sub"><div><span data-i18n="Amber:">Amber:</span> <strong id="rAmber">$0</strong> <span data-i18n="/ month">/ month</span></div><div><span data-i18n="Total monthly revenue:">Total monthly revenue:</span> <strong id="rTotal">$0</strong></div>
       <div style="color:var(--owe)"><span data-i18n="Revenue with overdue payments:">Revenue with overdue payments:</span> <strong id="rOverdue">$0</strong> <span data-i18n="/ month">/ month</span></div></div>
+    <div class="sub" id="outcomeTop" style="border-left:1px solid var(--line);padding-left:20px"><div style="color:var(--grn)"><span data-i18n="Revenue saved:">Revenue saved:</span> <strong id="rSaved">$0 / month (0 accounts)</strong></div><div style="color:var(--mute)"><span data-i18n="Revenue lost:">Revenue lost:</span> <strong id="rLost">$0 / month (0 accounts)</strong></div></div>
     <div class="sub" style="border-left:1px solid var(--line);padding-left:20px"><div><span data-i18n="Open escalations:">Open escalations:</span> <strong id="escOpen">0</strong></div><div><span data-i18n="Average warning-to-acknowledgment time:">Average warning-to-acknowledgment time:</span> <strong id="escAvg">none yet</strong></div></div>
   </div>
   <div class="tiles" id="summary" aria-live="polite">
@@ -120,6 +125,19 @@
     <pre class="copy" id="escCopyOut" style="display:none"></pre>
     <h3 style="font-size:13px;margin:12px 0 4px" data-i18n="Acknowledged">Acknowledged</h3>
     <div id="escDoneList"><p class="mute">None yet.</p></div>
+  </div>
+
+  <div class="grid">
+    <div class="card" id="outcomeCard">
+      <h2 data-i18n="Outcomes">Outcomes</h2>
+      <p class="mute" style="margin-top:0" data-i18n="outcomeHint">Use "Mark saved" or "Mark lost" on an at-risk account. Resolved accounts leave the at-risk list and the revenue-at-risk figures.</p>
+      <div id="outcomeList"></div>
+    </div>
+    <div class="card" id="boardCard">
+      <h2 data-i18n="Board summary">Board summary</h2>
+      <pre class="copy" id="boardOut"></pre>
+      <div class="actions"><button class="primary" id="boardCopy" data-i18n="Copy board summary">Copy board summary</button><span class="mute" id="boardMsg" role="status"></span></div>
+    </div>
   </div>
 
   <div class="card">
@@ -208,6 +226,8 @@ const PT={
   "Add an account":"Adicionar uma conta","Account name":"Nome ou ID da conta","Owner (CS)":"Responsável (CS)","Notes / latest ticket (optional)":"Notas / último chamado (opcional)",
   "Add account":"Adicionar conta","Paste CSV":"Colar CSV","Import CSV":"Importar CSV",
   "csvLabel":"Uma conta por linha: nome, logins, chamados, dias, mensalidade, responsável, notas, dias de atraso (mensalidade, responsável, notas e dias de atraso opcionais; cabeçalho opcional)",
+  "Revenue saved:":"Receita salva:","Revenue lost:":"Receita perdida:","Outcomes":"Resultados","Board summary":"Resumo para a diretoria","Copy board summary":"Copiar resumo",
+  "outcomeHint":"Use \"Marcar como salva\" ou \"Marcar como perdida\" em uma conta em risco. Contas resolvidas saem da lista de risco e dos valores de receita em risco.",
   "e.g. Acme Corp":"ex.: Assinante #1042","e.g. Priya Shah":"ex.: Ana Souza","e.g. Asked how to export their data":"ex.: Perguntou como pausar a assinatura"
 };
 const EN={};
@@ -238,7 +258,7 @@ function reason(s){const out=[];
   if(s.r)out.push(renewText(s.D));
   return out.join(", ");}
 function rank(a){return a.cancel?2:cnt(a.overdue)>0?1:0}
-function atRiskList(){return accounts.map(a=>({a,s:score(a)})).filter(x=>x.s.health!=="Green"||rank(x.a))
+function atRiskList(){return accounts.filter(isOpen).map(a=>({a,s:score(a)})).filter(x=>x.s.health!=="Green"||rank(x.a))
   .sort((x,y)=>rank(y.a)-rank(x.a)||y.s.total-x.s.total||x.s.D-y.s.D||String(x.a.name).localeCompare(String(y.a.name)));}
 
 // ---- Storage (this browser only) ----
@@ -246,7 +266,9 @@ function save(){try{window.localStorage.setItem(SKEY,JSON.stringify(accounts))}c
 function loadStored(){try{const v=JSON.parse(window.localStorage.getItem(SKEY));return Array.isArray(v)?v.filter(a=>a&&typeof a==="object").map(clean):null}catch(e){return null}}
 function cleanAi(x){if(!x||typeof x!=="object"||!["ai","kw","msg"].includes(x.kind))return null;return {kind:x.kind,sig:String(x.sig||""),why:String(x.why||""),word:x.word?String(x.word):"",mode:x.mode==="off"?"off":"down"}}
 function clean(a){return {id:a.id||newId(),name:String(a.name??""),logins:cnt(a.logins),tickets:cnt(a.tickets),days:Math.floor(num(a.days)),bill:bill(a.bill),overdue:cnt(a.overdue),owner:String(a.owner??""),notes:String(a.notes??""),
-  cancel:a.cancel?{src:a.cancel.src==="AI"?"AI":"keyword read",why:String(a.cancel.why||"")}:null,ai:cleanAi(a.ai)}}
+  cancel:a.cancel?{src:a.cancel.src==="AI"?"AI":"keyword read",why:String(a.cancel.why||"")}:null,ai:cleanAi(a.ai),
+  outcome:a.outcome&&["saved","lost"].includes(a.outcome.kind)?{kind:a.outcome.kind,at:num(a.outcome.at)}:null}}
+function isOpen(a){return !a.outcome}
 
 const SAMPLE=[
   ["Northwind Dental Group",3,6,21,4800,"Priya Shah","Honestly we've started trialling FieldPulse and may not renew in March."],
@@ -289,7 +311,8 @@ function aiText(x){if(!x)return "";
 function aiCell(a){const busy=a.busy?`<span class="mute">${T("Reading...","Lendo...")}</span>`:"";
   const res=a.ai?`<div class="ai">${aiText(a.ai)}</div>`:"";
   return `${a.cancel?warnBadge(a)+"<br>":""}${res}${busy}<button class="sm" data-ai="${esc(a.id)}" ${a.busy?"disabled":""}>${aiOn?T("AI read","Leitura IA"):T("Keyword read","Ler palavras-chave")}</button>`;}
-function rowScore(a){const s=score(a);return {pill:`<span class="pill ${s.health}">${esc(HL(s.health))}</span>${cnt(a.overdue)?"<br>"+oweBadge(a):""}`,bd:esc(s.breakdown)}}
+function outTag(a){return a.outcome?` <span class="outc ${a.outcome.kind}">${a.outcome.kind==="saved"?T("Saved","Salva"):T("Lost","Perdida")}</span>`:""}
+function rowScore(a){const s=score(a);return {pill:`<span class="pill ${s.health}">${esc(HL(s.health))}</span>${outTag(a)}${cnt(a.overdue)?"<br>"+oweBadge(a):""}`,bd:esc(s.breakdown)}}
 function render(){
   const tb=$("accTable").querySelector("tbody");
   tb.innerHTML=accounts.map(a=>{const r=rowScore(a);return `<tr data-row="${esc(a.id)}">
@@ -309,18 +332,36 @@ function render(){
   refresh();
 }
 function refresh(){
-  const c={Red:0,Amber:0,Green:0},rev={Red:0,Amber:0,Green:0};let owe=0;
-  accounts.forEach(a=>{const h=score(a).health;c[h]++;rev[h]+=bill(a.bill);if(cnt(a.overdue))owe+=bill(a.bill)});
-  const totalRev=rev.Red+rev.Amber+rev.Green;
+  const c={Red:0,Amber:0,Green:0},rev={Red:0,Amber:0,Green:0},oc={saved:{n:0,v:0},lost:{n:0,v:0}};let owe=0;
+  accounts.forEach(a=>{if(a.outcome){oc[a.outcome.kind].n++;oc[a.outcome.kind].v+=bill(a.bill);return}
+    const h=score(a).health;c[h]++;rev[h]+=bill(a.bill);if(cnt(a.overdue))owe+=bill(a.bill)});
+  const totalRev=rev.Red+rev.Amber+rev.Green+oc.saved.v; // lost accounts no longer pay
+  const fig=o=>`${usd(o.v)} ${T("/ month","/ mês")} (${o.n} ${T(pl(o.n,"account","accounts"),pl(o.n,"conta","contas"))})`;
+  $("rSaved").textContent=fig(oc.saved);$("rLost").textContent=fig(oc.lost);
+  renderOutcomes();
+  $("boardOut").textContent=boardText(c,rev,oc);
   $("rRisk").textContent=usd(rev.Red);$("rAmber").textContent=usd(rev.Amber);$("rTotal").textContent=usd(totalRev);$("rOverdue").textContent=usd(owe);
-  $("cRed").textContent=c.Red;$("cAmber").textContent=c.Amber;$("cGreen").textContent=c.Green;$("cTotal").textContent=accounts.length;
+  $("cRed").textContent=c.Red;$("cAmber").textContent=c.Amber;$("cGreen").textContent=c.Green;$("cTotal").textContent=c.Red+c.Amber+c.Green;
   const list=atRiskList();
   $("atRisk").innerHTML=list.length?list.map(({a,s},i)=>{const why=reason(s)||(a.cancel?T("score is Green, pinned for the cancellation warning","pontuação Verde, fixada pelo aviso de cancelamento"):T("score is Green, pinned for the overdue payment","pontuação Verde, fixada pelo pagamento vencido"));
-    return `<div class="risk ${s.health}" data-risk="${esc(a.id)}"><strong>${i+1}. ${esc(a.name||T("(no name)","(sem nome)"))}</strong> <span class="pill ${s.health}">${esc(HL(s.health))} &middot; ${s.total} ${T("pts","pts")}</span> <strong style="float:right">${esc(usd(bill(a.bill)))} ${T("/ month","/ mês")}</strong><br>${a.cancel?warnBadge(a)+"<br>":""}${cnt(a.overdue)?oweBadge(a)+"<br>":""}${esc(why)}${a.owner?` <span class="mute">&middot; ${T("owner","responsável")} ${esc(a.owner)}</span>`:""} <button class="sm" data-escalate="${esc(a.id)}">${T("Escalate","Escalar")}</button></div>`}).join("")
+    return `<div class="risk ${s.health}" data-risk="${esc(a.id)}"><strong>${i+1}. ${esc(a.name||T("(no name)","(sem nome)"))}</strong> <span class="pill ${s.health}">${esc(HL(s.health))} &middot; ${s.total} ${T("pts","pts")}</span> <strong style="float:right">${esc(usd(bill(a.bill)))} ${T("/ month","/ mês")}</strong><br>${a.cancel?warnBadge(a)+"<br>":""}${cnt(a.overdue)?oweBadge(a)+"<br>":""}${esc(why)}${a.owner?` <span class="mute">&middot; ${T("owner","responsável")} ${esc(a.owner)}</span>`:""} <button class="sm" data-escalate="${esc(a.id)}">${T("Escalate","Escalar")}</button> <button class="sm" data-outcome="saved" data-oid="${esc(a.id)}">${T("Mark saved","Marcar como salva")}</button> <button class="sm" data-outcome="lost" data-oid="${esc(a.id)}">${T("Mark lost","Marcar como perdida")}</button></div>`}).join("")
     :`<p class="mute">${accounts.length?T("No Red or Amber accounts. Everyone looks healthy.","Nenhuma conta Vermelha ou Amarela. Todos parecem saudáveis."):T("No accounts yet.","Nenhuma conta ainda.")}</p>`;
-  window.__churn={counts:c,revenue:{red:rev.Red,amber:rev.Amber,total:totalRev,overdue:owe},total:accounts.length,atRisk:list.map(x=>x.a.name)};
+  window.__churn={counts:c,outcomes:oc,revenue:{red:rev.Red,amber:rev.Amber,total:totalRev,overdue:owe},total:accounts.length,atRisk:list.map(x=>x.a.name)};
   save();
 }
+function renderOutcomes(){const L=accounts.filter(a=>a.outcome).sort((x,y)=>y.outcome.at-x.outcome.at);
+  $("outcomeList").innerHTML=L.length?L.map(a=>{const sv=a.outcome.kind==="saved";return `<div class="oc ${a.outcome.kind}" data-oc="${esc(a.id)}"><span class="outc ${a.outcome.kind}">${sv?T("Saved","Salva"):T("Lost","Perdida")}</span> <strong>${esc(a.name)}</strong> &middot; ${esc(usd(bill(a.bill)))} ${T("/ month","/ mês")}${a.owner?` &middot; ${T("owner","responsável")} ${esc(a.owner)}`:""} <span class="mute">&middot; ${esc(new Date(a.outcome.at).toLocaleDateString(LANG==="pt"?"pt-BR":"en-US"))}</span> <button class="sm" data-undooutcome="${esc(a.id)}">${T("Undo","Desfazer")}</button></div>`}).join("")
+    :`<p class="mute">${T("No saved or lost accounts yet.","Nenhuma conta salva ou perdida ainda.")}</p>`;}
+function boardText(c,rev,oc){const atRisk=rev.Red+rev.Amber,n=c.Red+c.Amber,res=oc.saved.v+oc.lost.v,rate=res?Math.round(oc.saved.v/res*100)+"%":T("n/a","n/d");
+  return LANG==="pt"?`Em risco agora: ${usd(atRisk)}/mês em ${n} ${pl(n,"conta","contas")} (${c.Red} ${pl(c.Red,"vermelha","vermelhas")}, ${c.Amber} ${pl(c.Amber,"amarela","amarelas")}). Salvas neste período: ${usd(oc.saved.v)}/mês (${oc.saved.n}). Perdidas: ${usd(oc.lost.v)}/mês (${oc.lost.n}). Taxa de retenção: ${rate} da receita em risco já resolvida.`
+    :`At risk now: ${usd(atRisk)}/mo across ${n} ${pl(n,"account","accounts")} (${c.Red} red, ${c.Amber} amber). Saved this period: ${usd(oc.saved.v)}/mo (${oc.saved.n}). Lost: ${usd(oc.lost.v)}/mo (${oc.lost.n}). Save rate: ${rate} of resolved at-risk revenue.`}
+document.addEventListener("click",e=>{const t=e.target;
+  if(t.dataset.outcome&&t.dataset.oid){const a=find(t.dataset.oid);if(!a)return;a.outcome={kind:t.dataset.outcome,at:now()};updateRow(a);refresh();
+    msg("listMsg",a.outcome.kind==="saved"?T(`Marked "${esc(a.name)}" saved.`,`"${esc(a.name)}" marcada como salva.`):T(`Marked "${esc(a.name)}" lost.`,`"${esc(a.name)}" marcada como perdida.`));}
+  if(t.dataset.undooutcome){const a=find(t.dataset.undooutcome);if(!a)return;a.outcome=null;updateRow(a);refresh();msg("listMsg",T(`"${esc(a.name)}" is back on the at-risk list.`,`"${esc(a.name)}" voltou para a lista de risco.`));}
+  if(t.id==="boardCopy"){const txt=$("boardOut").textContent;$("boardOut").style.display="block";
+    try{if(navigator.clipboard)navigator.clipboard.writeText(txt).then(()=>msg("boardMsg",T("Copied.","Copiado."))).catch(()=>msg("boardMsg",T("Select the text above to copy.","Selecione o texto acima para copiar.")));else msg("boardMsg",T("Select the text above to copy.","Selecione o texto acima para copiar."))}catch(err){}}
+});
 function updateRow(a){const tr=[...document.querySelectorAll("tr[data-row]")].find(r=>r.dataset.row===a.id);if(!tr)return;const r=rowScore(a);
   tr.querySelector('[data-cell="health"]').innerHTML=r.pill;tr.querySelector('[data-cell="bd"]').innerHTML=r.bd;tr.querySelector('[data-cell="ai"]').innerHTML=aiCell(a);}
 function find(id){return accounts.find(a=>a.id===id)}
