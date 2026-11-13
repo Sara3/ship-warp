@@ -22,7 +22,7 @@ function boot({ fetch, seed, escSeed } = {}) {
   const row = name => rows().find(r => r.querySelector('[data-k="name"]').value === name);
   const add = (name, logins, tickets, days, bill = "", notes = "") => {
     set("aName", name); set("aLogins", String(logins)); set("aTickets", String(tickets)); set("aDays", String(days)); set("aBill", String(bill)); set("aNotes", notes); $("addBtn").click(); };
-  const health = name => row(name).querySelector('[data-cell="health"]').textContent.trim();
+  const health = name => row(name).querySelector('[data-cell="health"] .pill').textContent.trim();
   const bd = name => row(name).querySelector('[data-cell="bd"]').textContent.trim();
   return { w, d, $, set, txt, rows, row, add, health, bd };
 }
@@ -246,6 +246,80 @@ function boot({ fetch, seed, escSeed } = {}) {
     eq(t2.txt("escAvg"), "18m 0s", "escalations remembered in this browser");
     const t3 = boot({ escSeed: "nonsense" });
     eq(t3.txt("escOpen"), "0", "corrupt escalation storage does not break page");
+  }
+
+  // ---------- Clube Caramelo: overdue payments, Português, privacy + AI toggle, Brazil samples ----------
+  const names = t => [...t.d.querySelectorAll("#atRisk [data-risk]")].map(e => e.querySelector("strong").textContent.replace(/^\d+\.\s*/, ""));
+  {
+    const t = boot({ seed: "[]" });
+    const EN_LABELS = ["Monthly revenue at risk", "At-risk accounts (Red and Amber, worst first)", "How the score works", "Load sample accounts", "Accounts", "Total accounts", "Escalations", "Check all tickets for cancellation intent", "Paste CSV", "Import CSV", "Add account", "Revenue with overdue payments:", "Overdue payments are flagged separately and do not change the score.", "Your data stays in this browser. No CPF, phone or email fields are needed: use any account name or ID."];
+    const main = () => t.d.querySelector("main").textContent;
+    EN_LABELS.forEach(l => ok(main().includes(l), `EN label "${l}"`));
+    eq(t.$("langEn").getAttribute("aria-pressed"), "true", "English is default");
+    t.$("sampleBtn").click();
+    eq(t.txt("rOverdue"), "$0", "no overdue revenue on EN samples");
+    // overdue on a Green account pins it, score unchanged
+    t.set(t.row("Harbor & Pine Realty").querySelector('[data-k="overdue"]'), "3");
+    eq(names(t)[0], "Harbor & Pine Realty", "overdue Green account pinned at top");
+    ok(t.d.querySelector("#atRisk [data-risk]").textContent.includes("Payment overdue 3 days (boleto/Pix)"), "orange overdue badge text");
+    ok(!!t.d.querySelector("#atRisk .owe"), "overdue badge uses the orange style");
+    eq(t.health("Harbor & Pine Realty"), "Green", "overdue does not change R/A/G");
+    eq(t.txt("rOverdue"), "$1,200", "revenue with overdue payments");
+    eq(t.txt("rRisk"), "$16,900", "revenue at risk unchanged by overdue");
+    t.set(t.row("Harbor & Pine Realty").querySelector('[data-k="overdue"]'), "0");
+    ok(!names(t).includes("Harbor & Pine Realty"), "clearing overdue unpins");
+    eq(t.txt("rOverdue"), "$0", "overdue revenue back to 0");
+    // Português
+    t.$("langPt").click();
+    const PT_LABELS = ["Receita mensal em risco", "Contas em risco", "Assinantes", "Carregar contas de exemplo", "Como a pontuação funciona", "Vermelho", "Amarelo", "Verde", "Escalonamentos", "Seus dados ficam neste navegador. Não é preciso CPF, telefone nem e-mail", "Pagamentos vencidos são sinalizados à parte e não mudam a pontuação.", "Importar CSV", "Receita com pagamentos vencidos:"];
+    PT_LABELS.forEach(l => ok(main().includes(l), `PT label "${l}"`));
+    eq(t.txt("rRisk"), "R$ 16.900", "R$ in Português");
+    ok(t.bd("Northwind Dental Group").includes("chamados 2 + renovação 2 = 6 → Vermelho"), `PT breakdown (got ${t.bd("Northwind Dental Group")})`);
+    ok(t.txt("atRisk").includes("apenas 3 logins em 30 dias, 6 chamados abertos, renova em 21 dias"), "PT reasons");
+    ok(t.d.querySelector("footer").textContent.includes("Ship Warp Sorcery") && t.d.querySelector("header").textContent.includes("Ship Warp Sorcery"), "team name stays in PT");
+    t.$("langEn").click();
+    EN_LABELS.forEach(l => ok(main().includes(l), `EN label "${l}" restored exactly`));
+    ok(!/Receita|Assinantes|Vermelho/.test(main()), "no Portuguese left in English mode");
+    eq(t.txt("rRisk"), "$16,900", "$ back in English");
+    ok(t.bd("Northwind Dental Group").startsWith("logins 2 + tickets 2 + renewal 2 = 6 → Red"), "EN breakdown restored");
+    // CSV 8th column = days overdue
+    t.set("csvIn", "Assinante #9001,20,0,200,99,Ana Souza,boleto em aberto,7"); t.$("importBtn").click();
+    eq(t.row("Assinante #9001").querySelector('[data-k="overdue"]').value, "7", "CSV 8th column is days overdue");
+    eq(t.row("Assinante #9001").querySelector('[data-k="notes"]').value, "boleto em aberto", "CSV notes stay notes");
+    eq(names(t)[0], "Assinante #9001", "imported overdue account pinned");
+  }
+  {
+    // Brazil samples: pinning order cancellation -> overdue -> worst first; AI off => fetch never called
+    let calls = 0;
+    const t = boot({ seed: "[]", fetch: async () => { calls++; throw new Error("x"); } });
+    t.$("sampleBrBtn").click();
+    eq(t.rows().length, 10, "10 Brazilian subscribers");
+    eq(t.$("langPt").getAttribute("aria-pressed"), "true", "Brazil samples switch to Português");
+    eq(t.rows().filter(r => +r.querySelector('[data-k="overdue"]').value > 0).length, 3, "3 subscribers with overdue boleto/Pix");
+    ok(t.rows().every(r => { const b = +r.querySelector('[data-k="bill"]').value; return b >= 89 && b <= 249; }), "bills between R$ 89 and R$ 249");
+    eq(t.txt("rOverdue"), "R$ 477", "overdue revenue on Brazil samples");
+    eq(t.txt("rRisk"), "R$ 796", "revenue at risk on Brazil samples");
+    eq(t.txt("rTotal"), "R$ 1.560", "total on Brazil samples");
+    eq(JSON.stringify(names(t)), JSON.stringify(["Assinante #1236", "Assinante #1103", "Assinante #1129", "Assinante #1042", "Assinante #1188", "Assinante #1257", "Assinante #1150"]), "overdue pinned first (worst first among them), then normal order");
+    ok(t.d.querySelector("#atRisk [data-risk]").textContent.includes("Pagamento vencido há 3 dias (boleto/Pix)"), "PT overdue badge");
+    // AI off
+    eq(t.$("aiToggle").getAttribute("aria-pressed"), "true", "AI ticket read on by default");
+    t.$("aiToggle").click();
+    ok(/desligada/.test(t.txt("aiToggle")), "toggle shows off (PT)");
+    t.$("checkAllBtn").click(); await tick(20);
+    t.row("Assinante #1188").querySelector("[data-ai]").click(); await tick(10);
+    eq(calls, 0, "AI off: fetch never called");
+    ok(/Leitura de chamados por IA desligada/.test(t.row("Assinante #1188").textContent) && /leitura por palavras-chave: risco de cancelamento/.test(t.row("Assinante #1188").textContent), "AI off uses labelled keyword read");
+    eq(JSON.stringify(names(t).slice(0, 4)), JSON.stringify(["Assinante #1042", "Assinante #1236", "Assinante #1103", "Assinante #1129"]), "cancellation warning pinned above overdue");
+    ok(t.d.querySelector("#atRisk [data-risk]").textContent.includes("Aviso de cancelamento → escalar para Ana Souza"), "PT cancellation badge");
+    eq(t.health("Assinante #1129"), "Verde", "R/A/G unchanged");
+    // persisted off; turning on makes the call again
+    eq(t.w.localStorage.getItem("churnradar.aiOn.v1"), "0", "AI off remembered");
+    t.$("aiToggle").click();
+    t.row("Assinante #1188").querySelector("[data-ai]").click(); await tick(10);
+    eq(calls, 1, "AI on: fetch called");
+    t.$("langEn").click();
+    ok(/AI unavailable/.test(t.row("Assinante #1188").textContent), "fallback text renders in English after switching");
   }
 
   console.log(`${failures ? "FAILED" : "PASSED"}: ${passes} passed, ${failures} failed (churn)`);

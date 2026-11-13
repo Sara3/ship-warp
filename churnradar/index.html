@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ChurnRadar by Ship Warp Sorcery</title>
 <style>
-  :root{--bg:#f6f5f1;--card:#fff;--ink:#1d1d1b;--mute:#6b6a64;--line:#e3e1da;--acc:#1f6f50;--red:#b42318;--redbg:#fdecea;--amb:#a15c07;--ambbg:#fef4e2;--grn:#1f6f50;--grnbg:#e9f5ef}
+  :root{--bg:#f6f5f1;--card:#fff;--ink:#1d1d1b;--mute:#6b6a64;--line:#e3e1da;--acc:#1f6f50;--red:#b42318;--redbg:#fdecea;--amb:#a15c07;--ambbg:#fef4e2;--grn:#1f6f50;--grnbg:#e9f5ef;--owe:#c2410c}
   *{box-sizing:border-box}
   body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--ink)}
   header{background:var(--ink);color:#fff;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
@@ -61,133 +61,192 @@
   .esc.late .t{color:var(--red)}
   .esc q{display:block;margin:4px 0;color:var(--mute);font-style:italic}
   pre.copy{white-space:pre-wrap;font-size:12px;background:#faf9f6;border:1px solid var(--line);border-radius:6px;padding:8px}
+  .owe{display:inline-block;background:var(--owe);color:#fff;border-radius:12px;padding:2px 10px;font-size:12px;font-weight:700;margin:3px 0}
+  .privacy{font-size:13px;margin:10px 0 0;padding:6px 10px;border-radius:6px;background:var(--grnbg);color:var(--ink)}
+  .chip{padding:3px 10px;font-size:12px;border-radius:14px}
+  .chip[aria-pressed="true"]{background:var(--acc);color:#fff;border-color:var(--acc)}
+  header .chip{background:transparent;color:#fff;border-color:#6b6a64}
+  header .chip[aria-pressed="true"]{background:var(--acc);border-color:var(--acc)}
   footer{text-align:center;padding:20px;color:var(--mute);font-size:13px}
 </style>
 </head>
 <body>
 <header>
-  <div><h1>ChurnRadar</h1><span>Every subscription account scored Red / Amber / Green from usage, tickets and renewal date.</span></div>
-  <span>Team: <strong style="color:#fff">Ship Warp Sorcery</strong> &middot; <a href="../">BidBench</a></span>
+  <div><h1>ChurnRadar</h1><span data-i18n="Every subscription account scored Red / Amber / Green from usage, tickets and renewal date.">Every subscription account scored Red / Amber / Green from usage, tickets and renewal date.</span></div>
+  <span style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><span role="group" aria-label="Language"><button id="langEn" class="chip" aria-pressed="true">English</button> <button id="langPt" class="chip" aria-pressed="false" lang="pt-BR">Português</button></span>
+  <span><span data-i18n="Team:">Team:</span> <strong style="color:#fff">Ship Warp Sorcery</strong> &middot; <a href="../">BidBench</a></span></span>
 </header>
 
 <main>
   <div class="money" id="revCard" aria-live="polite">
-    <div><div class="lbl">Monthly revenue at risk</div><div class="big" id="rRisk">$0</div><div class="mute">Sum of the monthly bill across Red accounts</div></div>
-    <div class="sub"><div>Amber: <strong id="rAmber">$0</strong> / month</div><div>Total monthly revenue: <strong id="rTotal">$0</strong></div></div>
-    <div class="sub" style="border-left:1px solid var(--line);padding-left:20px"><div>Open escalations: <strong id="escOpen">0</strong></div><div>Average warning-to-acknowledgment time: <strong id="escAvg">none yet</strong></div></div>
+    <div><div class="lbl" data-i18n="Monthly revenue at risk">Monthly revenue at risk</div><div class="big" id="rRisk">$0</div><div class="mute" data-i18n="Sum of the monthly bill across Red accounts">Sum of the monthly bill across Red accounts</div></div>
+    <div class="sub"><div><span data-i18n="Amber:">Amber:</span> <strong id="rAmber">$0</strong> <span data-i18n="/ month">/ month</span></div><div><span data-i18n="Total monthly revenue:">Total monthly revenue:</span> <strong id="rTotal">$0</strong></div>
+      <div style="color:var(--owe)"><span data-i18n="Revenue with overdue payments:">Revenue with overdue payments:</span> <strong id="rOverdue">$0</strong> <span data-i18n="/ month">/ month</span></div></div>
+    <div class="sub" style="border-left:1px solid var(--line);padding-left:20px"><div><span data-i18n="Open escalations:">Open escalations:</span> <strong id="escOpen">0</strong></div><div><span data-i18n="Average warning-to-acknowledgment time:">Average warning-to-acknowledgment time:</span> <strong id="escAvg">none yet</strong></div></div>
   </div>
   <div class="tiles" id="summary" aria-live="polite">
-    <div class="tile Red"><span>Red</span><b id="cRed">0</b></div>
-    <div class="tile Amber"><span>Amber</span><b id="cAmber">0</b></div>
-    <div class="tile Green"><span>Green</span><b id="cGreen">0</b></div>
-    <div class="tile"><span>Total accounts</span><b id="cTotal">0</b></div>
+    <div class="tile Red"><span data-i18n="Red">Red</span><b id="cRed">0</b></div>
+    <div class="tile Amber"><span data-i18n="Amber">Amber</span><b id="cAmber">0</b></div>
+    <div class="tile Green"><span data-i18n="Green">Green</span><b id="cGreen">0</b></div>
+    <div class="tile"><span data-i18n="Total accounts">Total accounts</span><b id="cTotal">0</b></div>
   </div>
 
   <div class="grid">
     <div class="card">
-      <h2>At-risk accounts (Red and Amber, worst first)</h2>
+      <h2 data-i18n="At-risk accounts (Red and Amber, worst first)">At-risk accounts (Red and Amber, worst first)</h2>
       <div id="atRisk"></div>
     </div>
     <div class="card rule" id="ruleCard">
-      <h2>How the score works</h2>
-      <p style="margin-top:0">Each account gets risk points from three facts. Add them up. <strong>0-1 points = Green, 2-3 = Amber, 4-6 = Red.</strong> Plain rule, no AI in the score.</p>
+      <h2 data-i18n="How the score works">How the score works</h2>
+      <p style="margin-top:0" data-i18n-html="rule">Each account gets risk points from three facts. Add them up. <strong>0-1 points = Green, 2-3 = Amber, 4-6 = Red.</strong> Plain rule, no AI in the score.</p>
       <table>
-        <tr><th>Fact</th><th>2 points</th><th>1 point</th><th>0 points</th></tr>
-        <tr><td>Logins in the last 30 days</td><td>0-4</td><td>5-14</td><td>15 or more</td></tr>
-        <tr><td>Open support tickets</td><td>5 or more</td><td>2-4</td><td>0-1</td></tr>
-        <tr><td>Days to renewal</td><td>0-30 (or overdue)</td><td>31-90</td><td>91 or more</td></tr>
+        <tr><th data-i18n="Fact">Fact</th><th data-i18n="2 points">2 points</th><th data-i18n="1 point">1 point</th><th data-i18n="0 points">0 points</th></tr>
+        <tr><td data-i18n="Logins in the last 30 days">Logins in the last 30 days</td><td>0-4</td><td>5-14</td><td data-i18n="15 or more">15 or more</td></tr>
+        <tr><td data-i18n="Open support tickets">Open support tickets</td><td data-i18n="5 or more">5 or more</td><td>2-4</td><td>0-1</td></tr>
+        <tr><td data-i18n="Days to renewal">Days to renewal</td><td data-i18n="0-30 (or overdue)">0-30 (or overdue)</td><td>31-90</td><td data-i18n="91 or more">91 or more</td></tr>
       </table>
-      <p class="mute" style="margin-bottom:0">The "AI read" column is advice from the account notes only. It never changes the Red / Amber / Green score.</p>
+      <p class="mute" data-i18n="aiNote">The "AI read" column is advice from the account notes only. It never changes the Red / Amber / Green score.</p>
+      <p style="margin-bottom:0;font-size:14px" id="overdueNote"><span class="owe">boleto/Pix</span> <span data-i18n="Overdue payments are flagged separately and do not change the score.">Overdue payments are flagged separately and do not change the score.</span> <span class="mute" data-i18n="overdueNote2">Any account 1 or more days overdue is pinned near the top of the at-risk list.</span></p>
     </div>
   </div>
 
   <div class="card" id="escCard">
-    <h2>Escalations</h2>
+    <h2 data-i18n="Escalations">Escalations</h2>
     <div class="actions" style="margin-top:0">
-      <label for="escThreshold" style="margin:0">Turn red after (minutes)</label><input id="escThreshold" type="number" min="1" step="1" value="30" style="width:80px">
-      <span class="mute">A cancellation warning opens one automatically. Use "Escalate" on any at-risk account to open one by hand.</span>
+      <label for="escThreshold" style="margin:0" data-i18n="Turn red after (minutes)">Turn red after (minutes)</label><input id="escThreshold" type="number" min="1" step="1" value="30" style="width:80px">
+      <span class="mute" data-i18n="escHint">A cancellation warning opens one automatically. Use "Escalate" on any at-risk account to open one by hand.</span>
     </div>
     <div id="escOpenList"></div>
     <pre class="copy" id="escCopyOut" style="display:none"></pre>
-    <h3 style="font-size:13px;margin:12px 0 4px">Acknowledged</h3>
+    <h3 style="font-size:13px;margin:12px 0 4px" data-i18n="Acknowledged">Acknowledged</h3>
     <div id="escDoneList"><p class="mute">None yet.</p></div>
   </div>
 
   <div class="card">
-    <h2>Accounts</h2>
+    <h2 data-i18n="Accounts">Accounts</h2>
     <div class="actions" style="margin-top:0">
-      <button class="primary" id="sampleBtn">Load sample accounts</button>
-      <button id="checkAllBtn">Check all tickets for cancellation intent</button>
-      <button id="clearBtn">Clear all</button>
+      <button class="primary" id="sampleBtn" data-i18n="Load sample accounts">Load sample accounts</button>
+      <button id="sampleBrBtn" data-i18n="Load sample subscribers (Brasil)">Load sample subscribers (Brasil)</button>
+      <button id="checkAllBtn" data-i18n="Check all tickets for cancellation intent">Check all tickets for cancellation intent</button>
+      <button id="aiToggle" class="chip" aria-pressed="true">AI ticket read: on</button>
+      <button id="clearBtn" data-i18n="Clear all">Clear all</button>
       <span class="mute" id="listMsg" role="status"></span>
     </div>
+    <p class="privacy" id="privacyNote" data-i18n="privacy">Your data stays in this browser. No CPF, phone or email fields are needed: use any account name or ID.</p>
     <div style="margin-top:12px">
       <table id="accTable">
-        <thead><tr><th>Account</th><th class="num">Logins (30 days)</th><th class="num">Open tickets</th><th class="num">Days to renewal</th><th class="num">Monthly bill ($)</th><th>Owner</th><th>Health</th><th>Points</th><th>Notes / latest ticket</th><th>AI signal</th><th></th></tr></thead>
+        <thead><tr><th data-i18n="Account">Account</th><th class="num" data-i18n="Logins (30 days)">Logins (30 days)</th><th class="num" data-i18n="Open tickets">Open tickets</th><th class="num" data-i18n="Days to renewal">Days to renewal</th><th class="num" data-i18n="Monthly bill ($)">Monthly bill ($)</th><th class="num" data-i18n="Days payment overdue">Days payment overdue</th><th data-i18n="Owner">Owner</th><th data-i18n="Health">Health</th><th data-i18n="Points">Points</th><th data-i18n="Notes / latest ticket">Notes / latest ticket</th><th data-i18n="AI signal">AI signal</th><th></th></tr></thead>
         <tbody></tbody>
       </table>
-      <p class="mute" id="emptyMsg">No accounts yet. Add one below, paste a CSV, or load the sample accounts.</p>
+      <p class="mute" id="emptyMsg" data-i18n="No accounts yet. Add one below, paste a CSV, or load the sample accounts.">No accounts yet. Add one below, paste a CSV, or load the sample accounts.</p>
     </div>
   </div>
 
   <div class="grid">
     <div class="card">
-      <h2>Add an account</h2>
+      <h2 data-i18n="Add an account">Add an account</h2>
       <div class="row4">
-        <div><label for="aName">Account name</label><input id="aName" placeholder="e.g. Acme Corp"></div>
-        <div><label for="aLogins">Logins (30 days)</label><input id="aLogins" type="number" min="0" step="1" placeholder="0"></div>
-        <div><label for="aTickets">Open tickets</label><input id="aTickets" type="number" min="0" step="1" placeholder="0"></div>
-        <div><label for="aDays">Days to renewal</label><input id="aDays" type="number" step="1" placeholder="90"></div>
+        <div><label for="aName" data-i18n="Account name">Account name</label><input id="aName" placeholder="e.g. Acme Corp" data-i18n-ph="e.g. Acme Corp"></div>
+        <div><label for="aLogins" data-i18n="Logins (30 days)">Logins (30 days)</label><input id="aLogins" type="number" min="0" step="1" placeholder="0"></div>
+        <div><label for="aTickets" data-i18n="Open tickets">Open tickets</label><input id="aTickets" type="number" min="0" step="1" placeholder="0"></div>
+        <div><label for="aDays" data-i18n="Days to renewal">Days to renewal</label><input id="aDays" type="number" step="1" placeholder="90"></div>
       </div>
-      <div class="row4" style="margin-top:10px;grid-template-columns:1fr 1fr"><div><label for="aBill">Monthly bill ($)</label><input id="aBill" type="number" min="0" step="any" placeholder="0"></div>
-        <div><label for="aOwner">Owner (CS)</label><input id="aOwner" placeholder="e.g. Priya Shah"></div></div>
-      <div style="margin-top:10px"><label for="aNotes">Notes / latest ticket (optional)</label><input id="aNotes" placeholder="e.g. Asked how to export their data"></div>
-      <div class="actions"><button class="primary" id="addBtn">Add account</button><span class="mute" id="addMsg" role="status"></span></div>
+      <div class="row4" style="margin-top:10px;grid-template-columns:1fr 1fr 1fr"><div><label for="aBill" data-i18n="Monthly bill ($)">Monthly bill ($)</label><input id="aBill" type="number" min="0" step="any" placeholder="0"></div>
+        <div><label for="aOwner" data-i18n="Owner (CS)">Owner (CS)</label><input id="aOwner" placeholder="e.g. Priya Shah" data-i18n-ph="e.g. Priya Shah"></div>
+        <div><label for="aOverdue" data-i18n="Days payment overdue">Days payment overdue</label><input id="aOverdue" type="number" min="0" step="1" placeholder="0"></div></div>
+      <div style="margin-top:10px"><label for="aNotes" data-i18n="Notes / latest ticket (optional)">Notes / latest ticket (optional)</label><input id="aNotes" placeholder="e.g. Asked how to export their data" data-i18n-ph="e.g. Asked how to export their data"></div>
+      <div class="actions"><button class="primary" id="addBtn" data-i18n="Add account">Add account</button><span class="mute" id="addMsg" role="status"></span></div>
     </div>
     <div class="card">
-      <h2>Paste CSV</h2>
-      <label for="csvIn">One account per line: name, logins, tickets, days, monthly bill, owner, notes (bill, owner and notes optional; header row optional)</label>
+      <h2 data-i18n="Paste CSV">Paste CSV</h2>
+      <label for="csvIn" data-i18n="csvLabel">One account per line: name, logins, tickets, days, monthly bill, owner, notes, days overdue (bill, owner, notes and days overdue optional; header row optional)</label>
       <textarea id="csvIn" placeholder="name,logins,tickets,days,bill,owner&#10;Acme Corp,3,6,21,4500,Priya Shah&#10;Globex,20,0,180,1200,Marcus Lee"></textarea>
-      <div class="actions"><button class="primary" id="importBtn">Import CSV</button><span class="mute" id="csvMsg" role="status"></span></div>
+      <div class="actions"><button class="primary" id="importBtn" data-i18n="Import CSV">Import CSV</button><span class="mute" id="csvMsg" role="status"></span></div>
     </div>
   </div>
 </main>
 
-<footer>ChurnRadar &middot; built by team <strong>Ship Warp Sorcery</strong> &middot; <a href="../">BidBench</a></footer>
+<footer>ChurnRadar &middot; <span data-i18n="built by team">built by team</span> <strong>Ship Warp Sorcery</strong> &middot; <a href="../">BidBench</a></footer>
 
 <script>
 const AI_URL="https://bidbench.pubandsubs.workers.dev/api/churn";
 const AI_TIMEOUT_MS=5000;
-const SKEY="churnradar.accounts.v1";
+const SKEY="churnradar.accounts.v1",AIKEY="churnradar.aiOn.v1";
 const $=id=>document.getElementById(id);
 function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 function num(v){const n=parseFloat(v);return isFinite(n)?n:0}
 function cnt(v){return Math.max(0,Math.floor(num(v)))}
 function bill(v){return Math.max(0,num(v))}
-function usd(n){return "$"+n.toLocaleString("en-US",{minimumFractionDigits:0,maximumFractionDigits:2})}
-let accounts=[],undoList=null,seq=0;
+let accounts=[],undoList=null,seq=0,LANG="en",aiOn=true;
 function newId(){return "a"+Date.now().toString(36)+(seq++).toString(36)}
+
+// ---- Language: English (default) | Português (Brasil) ----
+const PT={
+  "Every subscription account scored Red / Amber / Green from usage, tickets and renewal date.":"Cada assinatura recebe uma nota Vermelho / Amarelo / Verde com base em uso, chamados e data de renovação.",
+  "Team:":"Time:","built by team":"feito pelo time",
+  "Monthly revenue at risk":"Receita mensal em risco","Sum of the monthly bill across Red accounts":"Soma das mensalidades das contas Vermelhas",
+  "Amber:":"Amarelo:","/ month":"/ mês","Total monthly revenue:":"Receita mensal total:","Revenue with overdue payments:":"Receita com pagamentos vencidos:",
+  "Open escalations:":"Escalonamentos abertos:","Average warning-to-acknowledgment time:":"Tempo médio entre alerta e confirmação:",
+  "Red":"Vermelho","Amber":"Amarelo","Green":"Verde","Total accounts":"Total de assinantes",
+  "At-risk accounts (Red and Amber, worst first)":"Contas em risco (Vermelho e Amarelo, piores primeiro)",
+  "How the score works":"Como a pontuação funciona",
+  "rule":"Cada conta recebe pontos de risco por três fatos. Some os pontos. <strong>0-1 ponto = Verde, 2-3 = Amarelo, 4-6 = Vermelho.</strong> Regra simples, sem IA na pontuação.",
+  "Fact":"Fato","2 points":"2 pontos","1 point":"1 ponto","0 points":"0 pontos",
+  "Logins in the last 30 days":"Logins nos últimos 30 dias","Open support tickets":"Chamados de suporte abertos","Days to renewal":"Dias até a renovação",
+  "15 or more":"15 ou mais","5 or more":"5 ou mais","0-30 (or overdue)":"0-30 (ou vencida)","91 or more":"91 ou mais",
+  "aiNote":"A coluna \"Leitura IA\" é só uma sugestão a partir das notas da conta. Ela nunca muda a nota Vermelho / Amarelo / Verde.",
+  "Overdue payments are flagged separately and do not change the score.":"Pagamentos vencidos são sinalizados à parte e não mudam a pontuação.",
+  "overdueNote2":"Toda conta com 1 dia ou mais de atraso fica fixada no topo da lista de contas em risco.",
+  "Escalations":"Escalonamentos","Turn red after (minutes)":"Ficar vermelho após (minutos)",
+  "escHint":"Um aviso de cancelamento abre um escalonamento automaticamente. Use \"Escalar\" em qualquer conta em risco para abrir um manualmente.",
+  "Acknowledged":"Confirmados","Accounts":"Assinantes","Load sample accounts":"Carregar contas de exemplo","Load sample subscribers (Brasil)":"Carregar assinantes de exemplo (Brasil)",
+  "Check all tickets for cancellation intent":"Verificar intenção de cancelamento em todos os chamados","Clear all":"Limpar tudo",
+  "privacy":"Seus dados ficam neste navegador. Não é preciso CPF, telefone nem e-mail: use qualquer nome ou ID de conta.",
+  "Account":"Conta","Logins (30 days)":"Logins (30 dias)","Open tickets":"Chamados abertos","Monthly bill ($)":"Mensalidade (R$)","Days payment overdue":"Dias de pagamento vencido",
+  "Owner":"Responsável","Health":"Saúde","Points":"Pontos","Notes / latest ticket":"Notas / último chamado","AI signal":"Sinal da IA",
+  "No accounts yet. Add one below, paste a CSV, or load the sample accounts.":"Nenhuma conta ainda. Adicione uma abaixo, cole um CSV ou carregue as contas de exemplo.",
+  "Add an account":"Adicionar uma conta","Account name":"Nome ou ID da conta","Owner (CS)":"Responsável (CS)","Notes / latest ticket (optional)":"Notas / último chamado (opcional)",
+  "Add account":"Adicionar conta","Paste CSV":"Colar CSV","Import CSV":"Importar CSV",
+  "csvLabel":"Uma conta por linha: nome, logins, chamados, dias, mensalidade, responsável, notas, dias de atraso (mensalidade, responsável, notas e dias de atraso opcionais; cabeçalho opcional)",
+  "e.g. Acme Corp":"ex.: Assinante #1042","e.g. Priya Shah":"ex.: Ana Souza","e.g. Asked how to export their data":"ex.: Perguntou como pausar a assinatura"
+};
+const EN={};
+function T(en,pt){return LANG==="pt"?pt:en}
+function HL(h){return T(h,{Red:"Vermelho",Amber:"Amarelo",Green:"Verde"}[h])}
+function SIG(s){return T(s,{"churn risk":"risco de cancelamento","neutral":"neutro","positive":"positivo"}[s]||s)}
+function usd(n){return LANG==="pt"?"R$ "+n.toLocaleString("pt-BR",{minimumFractionDigits:0,maximumFractionDigits:2}):"$"+n.toLocaleString("en-US",{minimumFractionDigits:0,maximumFractionDigits:2})}
+function setLang(l){LANG=l==="pt"?"pt":"en";document.documentElement.lang=LANG==="pt"?"pt-BR":"en";
+  document.querySelectorAll("[data-i18n]").forEach(e=>{const k=e.dataset.i18n;if(!(k in EN))EN[k]=e.textContent;const v=LANG==="pt"&&PT[k]||EN[k];if(e.textContent!==v)e.textContent=v});
+  document.querySelectorAll("[data-i18n-html]").forEach(e=>{const k=e.dataset.i18nHtml;if(!(k in EN))EN[k]=e.innerHTML;e.innerHTML=LANG==="pt"&&PT[k]||EN[k]});
+  document.querySelectorAll("[data-i18n-ph]").forEach(e=>{const k=e.dataset.i18nPh;e.placeholder=LANG==="pt"&&PT[k]||k});
+  $("langEn").setAttribute("aria-pressed",String(LANG==="en"));$("langPt").setAttribute("aria-pressed",String(LANG==="pt"));
+  paintAiToggle();render();renderEscs();}
 
 // ---- The score: plain rule, exactly as written on the page ----
 function loginPts(n){return n<=4?2:n<=14?1:0}
 function ticketPts(n){return n>=5?2:n>=2?1:0}
 function renewalPts(d){return d<=30?2:d<=90?1:0}
 function health(p){return p>=4?"Red":p>=2?"Amber":"Green"}
-function score(a){const L=cnt(a.logins),T=cnt(a.tickets),D=Math.floor(num(a.days));
-  const l=loginPts(L),t=ticketPts(T),r=renewalPts(D),total=l+t+r,h=health(total);
-  return {l,t,r,total,health:h,L,T,D,breakdown:`logins ${l} + tickets ${t} + renewal ${r} = ${total} → ${h}`};}
+function score(a){const L=cnt(a.logins),T_=cnt(a.tickets),D=Math.floor(num(a.days));
+  const l=loginPts(L),t=ticketPts(T_),r=renewalPts(D),total=l+t+r,h=health(total);
+  return {l,t,r,total,health:h,L,T:T_,D,breakdown:T(`logins ${l} + tickets ${t} + renewal ${r} = ${total} → ${h}`,`logins ${l} + chamados ${t} + renovação ${r} = ${total} → ${HL(h)}`)};}
+const pl=(n,one,many)=>n===1?one:many;
+function renewText(d){return d<0?T(`renewal ${-d} day${pl(-d,"","s")} overdue`,`renovação vencida há ${-d} dia${pl(-d,"","s")}`):d===0?T("renews today","renova hoje"):T(`renews in ${d} day${pl(d,"","s")}`,`renova em ${d} dia${pl(d,"","s")}`)}
 function reason(s){const out=[];
-  if(s.l)out.push(`only ${s.L} login${s.L===1?"":"s"} in 30 days`);
-  if(s.t)out.push(`${s.T} open ticket${s.T===1?"":"s"}`);
-  if(s.r)out.push(s.D<0?`renewal ${-s.D} day${s.D===-1?"":"s"} overdue`:s.D===0?"renews today":`renews in ${s.D} day${s.D===1?"":"s"}`);
+  if(s.l)out.push(T(`only ${s.L} login${pl(s.L,"","s")} in 30 days`,`apenas ${s.L} login${pl(s.L,"","s")} em 30 dias`));
+  if(s.t)out.push(T(`${s.T} open ticket${pl(s.T,"","s")}`,`${s.T} chamado${pl(s.T,"","s")} aberto${pl(s.T,"","s")}`));
+  if(s.r)out.push(renewText(s.D));
   return out.join(", ");}
-function atRiskList(){return accounts.map(a=>({a,s:score(a)})).filter(x=>x.s.health!=="Green"||x.a.cancel)
-  .sort((x,y)=>(y.a.cancel?1:0)-(x.a.cancel?1:0)||y.s.total-x.s.total||x.s.D-y.s.D||String(x.a.name).localeCompare(String(y.a.name)));}
+function rank(a){return a.cancel?2:cnt(a.overdue)>0?1:0}
+function atRiskList(){return accounts.map(a=>({a,s:score(a)})).filter(x=>x.s.health!=="Green"||rank(x.a))
+  .sort((x,y)=>rank(y.a)-rank(x.a)||y.s.total-x.s.total||x.s.D-y.s.D||String(x.a.name).localeCompare(String(y.a.name)));}
 
 // ---- Storage (this browser only) ----
 function save(){try{window.localStorage.setItem(SKEY,JSON.stringify(accounts))}catch(e){}}
 function loadStored(){try{const v=JSON.parse(window.localStorage.getItem(SKEY));return Array.isArray(v)?v.filter(a=>a&&typeof a==="object").map(clean):null}catch(e){return null}}
-function clean(a){return {id:a.id||newId(),name:String(a.name??""),logins:cnt(a.logins),tickets:cnt(a.tickets),days:Math.floor(num(a.days)),bill:bill(a.bill),owner:String(a.owner??""),notes:String(a.notes??""),cancel:a.cancel?{src:String(a.cancel.src||""),why:String(a.cancel.why||"")}:null,ai:a.ai&&typeof a.ai==="object"?{text:String(a.ai.text??""),sig:String(a.ai.sig??""),html:""}:null}}
+function cleanAi(x){if(!x||typeof x!=="object"||!["ai","kw","msg"].includes(x.kind))return null;return {kind:x.kind,sig:String(x.sig||""),why:String(x.why||""),word:x.word?String(x.word):"",mode:x.mode==="off"?"off":"down"}}
+function clean(a){return {id:a.id||newId(),name:String(a.name??""),logins:cnt(a.logins),tickets:cnt(a.tickets),days:Math.floor(num(a.days)),bill:bill(a.bill),overdue:cnt(a.overdue),owner:String(a.owner??""),notes:String(a.notes??""),
+  cancel:a.cancel?{src:a.cancel.src==="AI"?"AI":"keyword read",why:String(a.cancel.why||"")}:null,ai:cleanAi(a.ai)}}
 
 const SAMPLE=[
   ["Northwind Dental Group",3,6,21,4800,"Priya Shah","Honestly we've started trialling FieldPulse and may not renew in March."],
@@ -201,14 +260,36 @@ const SAMPLE=[
   ["Sable Peak Outfitters",31,0,30,950,"Dana Ortiz","Happy with support, renewal paperwork sent."],
   ["Fjordline Media",16,1,95,1600,"Marcus Lee","Usage is fine, but procurement says we are evaluating alternatives before the renewal."]
 ];
-function sampleAccounts(){return SAMPLE.map(([name,logins,tickets,days,bill,owner,notes])=>({id:newId(),name,logins,tickets,days,bill,owner,notes,ai:null,cancel:null}))}
+// Brazilian pet-box subscribers: name/ID, logins, tickets, days to renewal, bill (R$), owner, notes, days overdue
+const SAMPLE_BR=[
+  ["Assinante #1042",2,3,12,189,"Ana Souza","Disse que vai cancelar se a caixa atrasar de novo.",0],
+  ["Assinante #1077",18,0,140,129,"Rafael Lima","Amou a caixa de outubro, pediu um brinquedo extra.",0],
+  ["Assinante #1103",6,2,25,249,"Juliana Costa","Boleto vencido, pediu a segunda via por WhatsApp.",12],
+  ["Assinante #1129",25,1,200,89,"Ana Souza","",5],
+  ["Assinante #1150",9,1,70,159,"Rafael Lima","Perguntou se dá para trocar o sabor da ração.",0],
+  ["Assinante #1188",3,5,40,219,"Juliana Costa","Reclamou de petisco quebrado duas vezes e pediu reembolso.",0],
+  ["Assinante #1204",16,0,95,99,"Ana Souza","",0],
+  ["Assinante #1236",11,2,18,139,"Rafael Lima","Pix não compensou, cliente diz que já pagou.",3],
+  ["Assinante #1257",20,3,60,179,"Juliana Costa","Gato com alergia, quer opção sem frango.",0],
+  ["Assinante #1281",14,1,120,109,"Ana Souza","",0]
+];
+function sampleAccounts(){return SAMPLE.map(([name,logins,tickets,days,bill,owner,notes])=>({id:newId(),name,logins,tickets,days,bill,overdue:0,owner,notes,ai:null,cancel:null}))}
+function sampleBR(){return SAMPLE_BR.map(([name,logins,tickets,days,bill,owner,notes,overdue])=>({id:newId(),name,logins,tickets,days,bill,overdue,owner,notes,ai:null,cancel:null}))}
 
 // ---- Rendering ----
-function warnBadge(a){return `<span class="warn">Cancellation warning → escalate to ${esc(a.owner||"(no owner set)")}</span> <span class="mute" style="font-size:11px">(${esc(a.cancel.src)})</span>`}
-function aiCell(a){const busy=a.busy?`<span class="mute">Reading...</span>`:"";
-  const res=a.ai?`<div class="ai">${a.ai.html||esc(a.ai.text)}</div>`:"";
-  return `${a.cancel?warnBadge(a)+"<br>":""}${res}${busy}<button class="sm" data-ai="${esc(a.id)}" ${a.busy?"disabled":""}>AI read</button>`;}
-function rowScore(a){const s=score(a);return {pill:`<span class="pill ${s.health}">${s.health}</span>`,bd:esc(s.breakdown)}}
+function srcLabel(src){return src==="AI"?T("AI","IA"):T("keyword read","leitura por palavras-chave")}
+function warnBadge(a){return `<span class="warn">${T("Cancellation warning → escalate to","Aviso de cancelamento → escalar para")} ${esc(a.owner||T("(no owner set)","(sem responsável)"))}</span> <span class="mute" style="font-size:11px">(${esc(srcLabel(a.cancel.src))})</span>`}
+function oweBadge(a){const n=cnt(a.overdue);return n?`<span class="owe">${T(`Payment overdue ${n} day${pl(n,"","s")} (boleto/Pix)`,`Pagamento vencido há ${n} dia${pl(n,"","s")} (boleto/Pix)`)}</span>`:""}
+function aiText(x){if(!x)return "";
+  if(x.kind==="msg")return esc(T("Add notes or the latest ticket text first.","Adicione notas ou o texto do último chamado primeiro."));
+  if(x.kind==="ai")return `<span class="sig">${T("AI","IA")}: ${esc(SIG(x.sig))}</span>${x.why?" - "+esc(x.why):""}`;
+  const why=x.word?T(`mentions "${x.word}"`,`menciona "${x.word}"`):T("no risk or positive words found","nenhuma palavra de risco ou positiva encontrada");
+  const lead=x.mode==="off"?T("AI ticket read is off.","Leitura de chamados por IA desligada."):T("AI unavailable.","IA indisponível.");
+  return `<span class="mute">${esc(lead)}</span> <span class="sig">${esc(T("keyword read","leitura por palavras-chave"))}: ${esc(SIG(x.sig))}</span> (${esc(why)})`;}
+function aiCell(a){const busy=a.busy?`<span class="mute">${T("Reading...","Lendo...")}</span>`:"";
+  const res=a.ai?`<div class="ai">${aiText(a.ai)}</div>`:"";
+  return `${a.cancel?warnBadge(a)+"<br>":""}${res}${busy}<button class="sm" data-ai="${esc(a.id)}" ${a.busy?"disabled":""}>${aiOn?T("AI read","Leitura IA"):T("Keyword read","Ler palavras-chave")}</button>`;}
+function rowScore(a){const s=score(a);return {pill:`<span class="pill ${s.health}">${esc(HL(s.health))}</span>${cnt(a.overdue)?"<br>"+oweBadge(a):""}`,bd:esc(s.breakdown)}}
 function render(){
   const tb=$("accTable").querySelector("tbody");
   tb.innerHTML=accounts.map(a=>{const r=rowScore(a);return `<tr data-row="${esc(a.id)}">
@@ -217,24 +298,27 @@ function render(){
     <td class="num"><input aria-label="Open tickets" type="number" min="0" step="1" value="${esc(a.tickets)}" data-id="${esc(a.id)}" data-k="tickets"></td>
     <td class="num"><input aria-label="Days to renewal" type="number" step="1" value="${esc(a.days)}" data-id="${esc(a.id)}" data-k="days"></td>
     <td class="num"><input aria-label="Monthly bill" type="number" min="0" step="any" value="${esc(a.bill)}" data-id="${esc(a.id)}" data-k="bill" style="width:100px"></td>
-    <td><input aria-label="Account owner" value="${esc(a.owner)}" placeholder="CS owner" data-id="${esc(a.id)}" data-k="owner" style="min-width:110px"></td>
+    <td class="num"><input aria-label="Days payment overdue" type="number" min="0" step="1" value="${cnt(a.overdue)?esc(cnt(a.overdue)):""}" placeholder="0" data-id="${esc(a.id)}" data-k="overdue" style="width:70px"></td>
+    <td><input aria-label="Account owner" value="${esc(a.owner)}" placeholder="${esc(T("CS owner","Responsável"))}" data-id="${esc(a.id)}" data-k="owner" style="min-width:110px"></td>
     <td data-cell="health">${r.pill}</td>
     <td class="bd" data-cell="bd">${r.bd}</td>
-    <td><input aria-label="Notes or latest ticket" value="${esc(a.notes)}" placeholder="optional" data-id="${esc(a.id)}" data-k="notes" style="min-width:180px"></td>
+    <td><input aria-label="Notes or latest ticket" value="${esc(a.notes)}" placeholder="${esc(T("optional","opcional"))}" data-id="${esc(a.id)}" data-k="notes" style="min-width:180px"></td>
     <td data-cell="ai">${aiCell(a)}</td>
-    <td><button class="x" title="Delete account" data-del="${esc(a.id)}">&times;</button></td></tr>`}).join("");
+    <td><button class="x" title="${esc(T("Delete account","Excluir conta"))}" data-del="${esc(a.id)}">&times;</button></td></tr>`}).join("");
   $("emptyMsg").style.display=accounts.length?"none":"block";
   refresh();
 }
 function refresh(){
-  const c={Red:0,Amber:0,Green:0},rev={Red:0,Amber:0,Green:0};accounts.forEach(a=>{const h=score(a).health;c[h]++;rev[h]+=bill(a.bill)});
+  const c={Red:0,Amber:0,Green:0},rev={Red:0,Amber:0,Green:0};let owe=0;
+  accounts.forEach(a=>{const h=score(a).health;c[h]++;rev[h]+=bill(a.bill);if(cnt(a.overdue))owe+=bill(a.bill)});
   const totalRev=rev.Red+rev.Amber+rev.Green;
-  $("rRisk").textContent=usd(rev.Red);$("rAmber").textContent=usd(rev.Amber);$("rTotal").textContent=usd(totalRev);
+  $("rRisk").textContent=usd(rev.Red);$("rAmber").textContent=usd(rev.Amber);$("rTotal").textContent=usd(totalRev);$("rOverdue").textContent=usd(owe);
   $("cRed").textContent=c.Red;$("cAmber").textContent=c.Amber;$("cGreen").textContent=c.Green;$("cTotal").textContent=accounts.length;
   const list=atRiskList();
-  $("atRisk").innerHTML=list.length?list.map(({a,s},i)=>`<div class="risk ${s.health}" data-risk="${esc(a.id)}"><strong>${i+1}. ${esc(a.name||"(no name)")}</strong> <span class="pill ${s.health}">${s.health} &middot; ${s.total} pts</span> <strong style="float:right">${esc(usd(bill(a.bill)))} / month</strong><br>${a.cancel?warnBadge(a)+"<br>":""}${esc(reason(s)||"score is Green, pinned for the cancellation warning")}${a.owner?` <span class="mute">&middot; owner ${esc(a.owner)}</span>`:""} <button class="sm" data-escalate="${esc(a.id)}">Escalate</button></div>`).join("")
-    :`<p class="mute">${accounts.length?"No Red or Amber accounts. Everyone looks healthy.":"No accounts yet."}</p>`;
-  window.__churn={counts:c,revenue:{red:rev.Red,amber:rev.Amber,total:totalRev},total:accounts.length,atRisk:list.map(x=>x.a.name)};
+  $("atRisk").innerHTML=list.length?list.map(({a,s},i)=>{const why=reason(s)||(a.cancel?T("score is Green, pinned for the cancellation warning","pontuação Verde, fixada pelo aviso de cancelamento"):T("score is Green, pinned for the overdue payment","pontuação Verde, fixada pelo pagamento vencido"));
+    return `<div class="risk ${s.health}" data-risk="${esc(a.id)}"><strong>${i+1}. ${esc(a.name||T("(no name)","(sem nome)"))}</strong> <span class="pill ${s.health}">${esc(HL(s.health))} &middot; ${s.total} ${T("pts","pts")}</span> <strong style="float:right">${esc(usd(bill(a.bill)))} ${T("/ month","/ mês")}</strong><br>${a.cancel?warnBadge(a)+"<br>":""}${cnt(a.overdue)?oweBadge(a)+"<br>":""}${esc(why)}${a.owner?` <span class="mute">&middot; ${T("owner","responsável")} ${esc(a.owner)}</span>`:""} <button class="sm" data-escalate="${esc(a.id)}">${T("Escalate","Escalar")}</button></div>`}).join("")
+    :`<p class="mute">${accounts.length?T("No Red or Amber accounts. Everyone looks healthy.","Nenhuma conta Vermelha ou Amarela. Todos parecem saudáveis."):T("No accounts yet.","Nenhuma conta ainda.")}</p>`;
+  window.__churn={counts:c,revenue:{red:rev.Red,amber:rev.Amber,total:totalRev,overdue:owe},total:accounts.length,atRisk:list.map(x=>x.a.name)};
   save();
 }
 function updateRow(a){const tr=[...document.querySelectorAll("tr[data-row]")].find(r=>r.dataset.row===a.id);if(!tr)return;const r=rowScore(a);
@@ -246,22 +330,25 @@ document.addEventListener("input",e=>{const t=e.target,a=t.dataset.id&&find(t.da
   if(k==="name"||k==="notes"||k==="owner"){a[k]=t.value;if(k==="notes"){a.ai=null;a.cancel=null}}else a[k]=k==="days"?Math.floor(num(t.value)):k==="bill"?bill(t.value):cnt(t.value);
   updateRow(a);refresh();});
 function msg(id,h){$(id).innerHTML=h}
+const undoBtn=()=>` <button class="sm" id="undoBtn">${T("Undo","Desfazer")}</button>`;
 document.addEventListener("click",e=>{const t=e.target;
   if(t.dataset.del){const i=accounts.findIndex(a=>a.id===t.dataset.del);if(i<0)return;undoList=accounts.slice();const gone=accounts.splice(i,1)[0];render();
-    msg("listMsg",`Deleted "${esc(gone.name)}". <button class="sm" id="undoBtn">Undo</button>`);}
-  if(t.id==="undoBtn"&&undoList){accounts=undoList;undoList=null;render();msg("listMsg","Restored.");}
+    msg("listMsg",T(`Deleted "${esc(gone.name)}".`,`"${esc(gone.name)}" excluída.`)+undoBtn());}
+  if(t.id==="undoBtn"&&undoList){accounts=undoList;undoList=null;render();msg("listMsg",T("Restored.","Restaurado."));}
   if(t.dataset.ai){const a=find(t.dataset.ai);if(a)aiRead(a);}
 });
 $("sampleBtn").onclick=()=>{undoList=accounts.length?accounts.slice():null;accounts=sampleAccounts();render();
-  msg("listMsg",`Loaded ${accounts.length} sample accounts.`+(undoList?` <button class="sm" id="undoBtn">Undo</button>`:""));};
-$("clearBtn").onclick=()=>{if(!accounts.length){msg("listMsg","Nothing to clear.");return}undoList=accounts.slice();accounts=[];render();
-  msg("listMsg",`Cleared all accounts. <button class="sm" id="undoBtn">Undo</button>`);};
-$("addBtn").onclick=()=>{const name=$("aName").value.trim();if(!name){msg("addMsg","Give the account a name first.");$("aName").focus();return}
-  const a={id:newId(),name,logins:cnt($("aLogins").value),tickets:cnt($("aTickets").value),days:Math.floor(num($("aDays").value===""?90:$("aDays").value)),bill:bill($("aBill").value),owner:$("aOwner").value.trim(),cancel:null,notes:$("aNotes").value.trim(),ai:null};
-  accounts.push(a);render();const s=score(a);msg("addMsg",`Added "${esc(name)}": ${esc(s.breakdown)}`);
-  ["aName","aLogins","aTickets","aDays","aBill","aOwner","aNotes"].forEach(id=>$(id).value="");};
+  msg("listMsg",T(`Loaded ${accounts.length} sample accounts.`,`${accounts.length} contas de exemplo carregadas.`)+(undoList?undoBtn():""));};
+$("sampleBrBtn").onclick=()=>{undoList=accounts.length?accounts.slice():null;accounts=sampleBR();setLang("pt");
+  msg("listMsg",T(`Loaded ${accounts.length} sample subscribers.`,`${accounts.length} assinantes de exemplo carregados.`)+(undoList?undoBtn():""));};
+$("clearBtn").onclick=()=>{if(!accounts.length){msg("listMsg",T("Nothing to clear.","Nada para limpar."));return}undoList=accounts.slice();accounts=[];render();
+  msg("listMsg",T("Cleared all accounts.","Todas as contas foram removidas.")+undoBtn());};
+$("addBtn").onclick=()=>{const name=$("aName").value.trim();if(!name){msg("addMsg",T("Give the account a name first.","Dê um nome ou ID à conta primeiro."));$("aName").focus();return}
+  const a={id:newId(),name,logins:cnt($("aLogins").value),tickets:cnt($("aTickets").value),days:Math.floor(num($("aDays").value===""?90:$("aDays").value)),bill:bill($("aBill").value),overdue:cnt($("aOverdue").value),owner:$("aOwner").value.trim(),cancel:null,notes:$("aNotes").value.trim(),ai:null};
+  accounts.push(a);render();const s=score(a);msg("addMsg",T(`Added "${esc(name)}": ${esc(s.breakdown)}`,`"${esc(name)}" adicionada: ${esc(s.breakdown)}`));
+  ["aName","aLogins","aTickets","aDays","aBill","aOwner","aOverdue","aNotes"].forEach(id=>$(id).value="");};
 
-// ---- CSV import: name,logins,tickets,days[,notes] ----
+// ---- CSV import: name,logins,tickets,days[,bill[,owner[,notes[,days overdue]]]] ----
 function parseLine(line){const out=[];let cur="",q=false;
   for(let i=0;i<line.length;i++){const ch=line[i];
     if(q){if(ch==='"'){if(line[i+1]==='"'){cur+='"';i++}else q=false}else cur+=ch}
@@ -269,25 +356,29 @@ function parseLine(line){const out=[];let cur="",q=false;
   out.push(cur);return out.map(s=>s.trim());}
 function isNum(s){return s!==""&&isFinite(Number(s))}
 function importCSV(text){const lines=String(text).split(/\r?\n/).map(l=>l.trim()).filter(Boolean);const added=[],skipped=[];
+  const ln=i=>T(`line ${i+1}`,`linha ${i+1}`);
   lines.forEach((line,i)=>{const f=parseLine(line);
-    if(i===0&&f.length>=2&&!isNum(f[1])&&/name|account|logins?/i.test(line))return; // header row
-    if(f.length<4||!f[0]){skipped.push(`line ${i+1} (needs name, logins, tickets, days)`);return}
+    if(i===0&&f.length>=2&&!isNum(f[1])&&/name|nome|account|conta|logins?/i.test(line))return; // header row
+    if(f.length<4||!f[0]){skipped.push(`${ln(i)} (${T("needs name, logins, tickets, days","precisa de nome, logins, chamados, dias")})`);return}
     const bad=[["logins",f[1]],["tickets",f[2]],["days",f[3]]].filter(([,v])=>!isNum(v)).map(([k])=>k);
-    if(bad.length){skipped.push(`line ${i+1} (${bad.join(", ")} not a number)`);return}
-    const b=(f[4]||"").replace(/[$,\s]/g,"");
-    if(b!==""&&!isNum(b)){skipped.push(`line ${i+1} (bill not a number)`);return}
-    added.push({id:newId(),name:f[0],logins:cnt(f[1]),tickets:cnt(f[2]),days:Math.floor(Number(f[3])),bill:b===""?0:bill(b),owner:f[5]||"",notes:f.slice(6).join(", "),ai:null,cancel:null});});
+    if(bad.length){skipped.push(`${ln(i)} (${bad.join(", ")} ${T("not a number","não é número")})`);return}
+    const b=(f[4]||"").replace(/R?\$|[,\s]/g,"");
+    if(b!==""&&!isNum(b)){skipped.push(`${ln(i)} (${T("bill not a number","mensalidade não é número")})`);return}
+    let notes=f.slice(6),od=0;
+    if(f.length>=8&&isNum(f[f.length-1])){od=cnt(f[f.length-1]);notes=f.slice(6,-1)}
+    added.push({id:newId(),name:f[0],logins:cnt(f[1]),tickets:cnt(f[2]),days:Math.floor(Number(f[3])),bill:b===""?0:bill(b),overdue:od,owner:f[5]||"",notes:notes.join(", "),ai:null,cancel:null});});
   return {added,skipped};}
 $("importBtn").onclick=()=>{const {added,skipped}=importCSV($("csvIn").value);
   if(added.length){accounts=accounts.concat(added);render();$("csvIn").value=""}
-  msg("csvMsg",(added.length?`Imported ${added.length} account${added.length===1?"":"s"}.`:"Nothing imported.")+(skipped.length?` Skipped ${esc(skipped.join("; "))}.`:""));};
+  const n=added.length;
+  msg("csvMsg",(n?T(`Imported ${n} account${pl(n,"","s")}.`,`${n} conta${pl(n,"","s")} importada${pl(n,"","s")}.`):T("Nothing imported.","Nada importado."))+(skipped.length?` ${T("Skipped","Ignoradas:")} ${esc(skipped.join("; "))}.`:""));};
 
 // ---- AI read (advice only; never changes the score) ----
-const KW_CANCEL=/cancel(lation)?|not renew|won['’]?t renew|will not renew|terminat(e|ing|ion)|switching to|evaluating alternatives|moving to another vendor/i;
-const KW_RISK=/not renew|trial(l)?ing|switch(ing)? to|competitor|leav(e|ing)|left the company|refund|too expensive|price increase|downgrad|frustrat|angry|unhappy|disappoint|not using|churn|terminat|outage|broken|budget (cut|review)/i;
-const KW_POS=/love|great|happy|expand|upgrade|more seats|adding|thank|renew(al|ing)? (signed|paperwork|confirmed)|recommend/i;
+const KW_CANCEL=/cancel(lation)?|not renew|won['’]?t renew|will not renew|terminat(e|ing|ion)|switching to|evaluating alternatives|moving to another vendor|cancelar|cancelamento|não vou renovar|nao vou renovar|não renovar|nao renovar|trocar de fornecedor|avaliando alternativas/i;
+const KW_RISK=/not renew|trial(l)?ing|switch(ing)? to|competitor|leav(e|ing)|left the company|refund|too expensive|price increase|downgrad|frustrat|angry|unhappy|disappoint|not using|churn|terminat|outage|broken|budget (cut|review)|cancel|reembolso|estorno|reclam|quebrad|atras|insatisfeit|caro demais|concorrente/i;
+const KW_POS=/love|great|happy|expand|upgrade|more seats|adding|thank|renew(al|ing)? (signed|paperwork|confirmed)|recommend|amou|adorou|elogi|satisfeit|feliz|ótim/i;
 function keywordRead(text){const r=text.match(KW_RISK),p=text.match(KW_POS);
-  if(r)return {sig:"churn risk",why:`mentions "${r[0]}"`};if(p)return {sig:"positive",why:`mentions "${p[0]}"`};return {sig:"neutral",why:"no risk or positive words found"};}
+  if(r)return {sig:"churn risk",word:r[0]};if(p)return {sig:"positive",word:p[0]};return {sig:"neutral",word:""};}
 async function callAI(text){
   if(typeof fetch!=="function")throw new Error("offline");
   const ctl=typeof AbortController==="function"?new AbortController():null;let timer;
@@ -297,21 +388,28 @@ async function callAI(text){
     const j=await Promise.race([res.json(),timeout]);
     const d=j&&j.ok&&j.data;if(!d||!["churn risk","neutral","positive"].includes(d.signal))throw new Error("bad reply");
     const why=String(d.reason||"").slice(0,300);
-    return {sig:d.signal,why,cancel:d.cancellation===true||(d.signal==="churn risk"&&/cancel|leav|not renew|won['’]?t renew/i.test(why))};}
+    return {sig:d.signal,why,cancel:d.cancellation===true||(d.signal==="churn risk"&&/cancel|leav|not renew|won['’]?t renew|renovar/i.test(why))};}
   finally{clearTimeout(timer)}}
+function kwFallback(text,mode){const k=keywordRead(text),m=text.match(KW_CANCEL);
+  return {ai:{kind:"kw",sig:k.sig,word:k.word,mode},cancel:m?{src:"keyword read",why:`mentions "${m[0]}"`}:null};}
 async function aiRead(a){const text=String(a.notes||"").trim();
-  if(!text){a.ai={sig:"",text:"Add notes or the latest ticket text first.",html:""};updateRow(a);return}
-  a.busy=true;updateRow(a);
+  if(!text){a.ai={kind:"msg"};updateRow(a);return false}
   let cancel=null;
-  try{const r=await callAI(text);if(r.cancel)cancel={src:"AI",why:r.why};a.ai={sig:r.sig,text:`AI: ${r.sig}${r.why?" - "+r.why:""}`,html:`<span class="sig">AI: ${esc(r.sig)}</span>${r.why?" - "+esc(r.why):""}`};}
-  catch(e){const k=keywordRead(text),m=text.match(KW_CANCEL);if(m)cancel={src:"keyword read",why:`mentions "${m[0]}"`};a.ai={sig:k.sig,text:`AI unavailable. keyword read: ${k.sig} (${k.why})`,html:`<span class="mute">AI unavailable.</span> <span class="sig">keyword read: ${esc(k.sig)}</span> (${esc(k.why)})`};}
-  finally{a.busy=false;a.cancel=cancel;if(cancel&&find(a.id))openEscalation(a,"cancellation");if(find(a.id))updateRow(a);refresh();}
+  if(!aiOn){const r=kwFallback(text,"off");a.ai=r.ai;cancel=r.cancel;} // AI off: no network call at all
+  else{a.busy=true;updateRow(a);
+    try{const r=await callAI(text);if(r.cancel)cancel={src:"AI",why:r.why};a.ai={kind:"ai",sig:r.sig,why:r.why};}
+    catch(e){const r=kwFallback(text,"down");a.ai=r.ai;cancel=r.cancel;}}
+  a.busy=false;a.cancel=cancel;if(cancel&&find(a.id))openEscalation(a,"cancellation");if(find(a.id))updateRow(a);refresh();
   return !!cancel;}
 $("checkAllBtn").onclick=async()=>{const list=accounts.filter(a=>String(a.notes||"").trim());
-  if(!list.length){msg("listMsg","No accounts have notes or ticket text to read.");return}
-  msg("listMsg",`Reading ${list.length} tickets...`);$("checkAllBtn").disabled=true;
+  if(!list.length){msg("listMsg",T("No accounts have notes or ticket text to read.","Nenhuma conta tem notas ou chamados para ler."));return}
+  msg("listMsg",T(`Reading ${list.length} tickets...`,`Lendo ${list.length} chamados...`));$("checkAllBtn").disabled=true;
   try{const res=await Promise.all(list.map(a=>aiRead(a).catch(()=>false)));const k=res.filter(Boolean).length;
-    msg("listMsg",`Checked ${list.length} tickets: ${k} cancellation warning${k===1?"":"s"}.`);}finally{$("checkAllBtn").disabled=false}};
+    msg("listMsg",T(`Checked ${list.length} tickets: ${k} cancellation warning${pl(k,"","s")}.`,`${list.length} chamados verificados: ${k} aviso${pl(k,"","s")} de cancelamento.`));}finally{$("checkAllBtn").disabled=false}};
+function paintAiToggle(){const b=$("aiToggle");b.setAttribute("aria-pressed",String(aiOn));
+  b.textContent=aiOn?T("AI ticket read: on","Leitura de chamados por IA: ligada"):T("AI ticket read: off","Leitura de chamados por IA: desligada");
+  b.title=aiOn?T("Ticket text is sent to the AI service when you ask for a read.","O texto do chamado é enviado ao serviço de IA quando você pede uma leitura."):T("Nothing leaves this browser: keyword read only.","Nada sai deste navegador: só leitura por palavras-chave.");}
+$("aiToggle").onclick=()=>{aiOn=!aiOn;try{window.localStorage.setItem(AIKEY,aiOn?"1":"0")}catch(e){}paintAiToggle();render();};
 
 // ---- Escalations (clock is swappable so tests can fake time) ----
 const EKEY="churnradar.escalations.v1",TKEY="churnradar.escThreshold.v1";
@@ -320,35 +418,39 @@ let escs=[];
 function loadEscs(){try{const v=JSON.parse(window.localStorage.getItem(EKEY)||"[]");return Array.isArray(v)?v.filter(e=>e&&e.id&&isFinite(e.createdAt)):[]}catch(e){return []}}
 function saveEscs(){try{window.localStorage.setItem(EKEY,JSON.stringify(escs))}catch(e){}}
 function dur(ms){const t=Math.max(0,Math.floor(ms/1000)),h=Math.floor(t/3600),m=Math.floor(t%3600/60),sec=t%60;return h?`${h}h ${m}m`:`${m}m ${sec}s`}
-function renewText(d){return d<0?`renewal ${-d} days overdue`:d===0?"renews today":`renews in ${d} day${d===1?"":"s"}`}
-function escMessage(e){return `${e.kind==="cancellation"?"Cancellation warning":"At-risk escalation"}: ${e.account} (owner ${e.owner||"unassigned"}), ${renewText(e.days)}, ${usd(e.bill)}/mo. Customer said: "${e.quote||"(no ticket text)"}" Please acknowledge in ChurnRadar.`}
+function escMessage(e){const own=e.owner||T("unassigned","sem responsável"),q=e.quote||T("(no ticket text)","(sem texto do chamado)");
+  return LANG==="pt"?`${e.kind==="cancellation"?"Aviso de cancelamento":"Escalonamento de conta em risco"}: ${e.account} (responsável ${own}), ${renewText(e.days)}, ${usd(e.bill)}/mês. O cliente disse: "${q}" Por favor, confirme no ChurnRadar.`
+    :`${e.kind==="cancellation"?"Cancellation warning":"At-risk escalation"}: ${e.account} (owner ${own}), ${renewText(e.days)}, ${usd(e.bill)}/mo. Customer said: "${q}" Please acknowledge in ChurnRadar.`}
 function openEscalation(a,kind){if(escs.some(e=>e.accountId===a.id&&!e.ackAt))return false;
   escs.unshift({id:"e"+now().toString(36)+(seq++).toString(36),accountId:a.id,account:a.name,owner:a.owner,createdAt:now(),quote:String(a.notes||"").trim(),days:Math.floor(num(a.days)),bill:bill(a.bill),kind,ackAt:null});
   saveEscs();renderEscs();return true;}
 function threshold(){return Math.max(1,num($("escThreshold").value)||30)}
-function renderEscs(){const t=now(),lim=threshold()*60000,open=escs.filter(e=>!e.ackAt),done=escs.filter(e=>e.ackAt);
+function renderEscs(){const t=now(),lim=threshold()*60000,open=escs.filter(e=>!e.ackAt),done=escs.filter(e=>e.ackAt),own=e=>esc(e.owner||T("unassigned","sem responsável"));
   $("escOpenList").innerHTML=open.length?open.map(e=>{const el=t-e.createdAt,late=el>=lim;return `<div class="esc${late?" late":""}" data-esc="${esc(e.id)}">
-    <span class="t" data-elapsed>${late?"overdue ":""}${dur(el)}</span><strong>${esc(e.account)}</strong> &middot; owner ${esc(e.owner||"unassigned")} &middot; ${esc(renewText(e.days))} &middot; ${esc(usd(e.bill))}/mo
-    <q>${esc(e.quote||"(no ticket text)")}</q>
-    <button class="sm" data-copy="${esc(e.id)}">Copy message</button> <button class="sm primary" data-ack="${esc(e.id)}">Acknowledge</button></div>`}).join("")
-    :`<p class="mute">No open escalations.</p>`;
-  $("escDoneList").innerHTML=done.length?done.map(e=>`<div class="esc done" data-done="${esc(e.id)}"><span class="t">time to acknowledge: ${dur(e.ackAt-e.createdAt)}</span><strong>${esc(e.account)}</strong> &middot; owner ${esc(e.owner||"unassigned")}</div>`).join(""):`<p class="mute">None yet.</p>`;
+    <span class="t" data-elapsed>${late?T("overdue ","atrasado "):""}${dur(el)}</span><strong>${esc(e.account)}</strong> &middot; ${T("owner","responsável")} ${own(e)} &middot; ${esc(renewText(e.days))} &middot; ${esc(usd(e.bill))}${T("/mo","/mês")}
+    <q>${esc(e.quote||T("(no ticket text)","(sem texto do chamado)"))}</q>
+    <button class="sm" data-copy="${esc(e.id)}">${T("Copy message","Copiar mensagem")}</button> <button class="sm primary" data-ack="${esc(e.id)}">${T("Acknowledge","Confirmar")}</button></div>`}).join("")
+    :`<p class="mute">${T("No open escalations.","Nenhum escalonamento aberto.")}</p>`;
+  $("escDoneList").innerHTML=done.length?done.map(e=>`<div class="esc done" data-done="${esc(e.id)}"><span class="t">${T("time to acknowledge:","tempo até a confirmação:")} ${dur(e.ackAt-e.createdAt)}</span><strong>${esc(e.account)}</strong> &middot; ${T("owner","responsável")} ${own(e)}</div>`).join(""):`<p class="mute">${T("None yet.","Nenhum ainda.")}</p>`;
   $("escOpen").textContent=open.length;
-  $("escAvg").textContent=done.length?dur(done.reduce((s,e)=>s+(e.ackAt-e.createdAt),0)/done.length):"none yet";}
+  $("escAvg").textContent=done.length?dur(done.reduce((s,e)=>s+(e.ackAt-e.createdAt),0)/done.length):T("none yet","nenhum ainda");}
 document.addEventListener("click",e=>{const t=e.target;
-  if(t.dataset.escalate){const a=find(t.dataset.escalate);if(!a)return;msg("listMsg",openEscalation(a,a.cancel?"cancellation":"manual")?`Escalated "${esc(a.name)}" to ${esc(a.owner||"(no owner set)")}.`:`"${esc(a.name)}" already has an open escalation.`);}
+  if(t.dataset.escalate){const a=find(t.dataset.escalate);if(!a)return;const o=esc(a.owner||T("(no owner set)","(sem responsável)"));
+    msg("listMsg",openEscalation(a,a.cancel?"cancellation":"manual")?T(`Escalated "${esc(a.name)}" to ${o}.`,`"${esc(a.name)}" escalada para ${o}.`):T(`"${esc(a.name)}" already has an open escalation.`,`"${esc(a.name)}" já tem um escalonamento aberto.`));}
   if(t.dataset.copy){const x=escs.find(v=>v.id===t.dataset.copy);if(!x)return;const txt=escMessage(x);$("escCopyOut").textContent=txt;$("escCopyOut").style.display="block";
     try{if(navigator.clipboard)navigator.clipboard.writeText(txt).catch(()=>{})}catch(err){}}
   if(t.dataset.ack){const x=escs.find(v=>v.id===t.dataset.ack);if(!x||x.ackAt)return;x.ackAt=now();saveEscs();renderEscs();}
 });
 $("escThreshold").addEventListener("input",()=>{try{window.localStorage.setItem(TKEY,String(threshold()))}catch(e){}renderEscs()});
+$("langEn").onclick=()=>setLang("en");$("langPt").onclick=()=>setLang("pt");
 
 // ---- Start: remembered accounts, or the samples on a first visit ----
 const stored=loadStored();
 accounts=stored===null?sampleAccounts():stored;
 escs=loadEscs();
 try{const th=window.localStorage.getItem(TKEY);if(th)$("escThreshold").value=th}catch(e){}
-render();renderEscs();
+try{aiOn=window.localStorage.getItem(AIKEY)!=="0"}catch(e){}
+paintAiToggle();render();renderEscs();
 setInterval(renderEscs,1000);
 </script>
 </body>
