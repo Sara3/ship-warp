@@ -71,6 +71,17 @@
     <h2>Materials</h2>
     <table id="matTable"><thead><tr><th>Item</th><th class="num">Qty</th><th>Unit</th><th class="num">Unit cost</th><th class="num">Line total</th><th></th></tr></thead><tbody></tbody></table>
     <div class="actions"><button id="addMat">+ Material line</button></div>
+    <div style="margin-top:12px;padding:10px;border:1px dashed var(--line);border-radius:8px">
+      <strong style="font-size:14px">Square-footage line</strong>
+      <div class="row" style="grid-template-columns:2fr 1fr 1fr 1fr;margin-top:6px">
+        <div><label for="aName">Item</label><input id="aName" value="Paver patio (installed)"></div>
+        <div><label for="aLen">Length (ft)</label><input id="aLen" type="number" step="any" value="20"></div>
+        <div><label for="aWid">Width (ft)</label><input id="aWid" type="number" step="any" value="20"></div>
+        <div><label for="aPrice">Price / sq ft</label><input id="aPrice" type="number" step="any" value="12"></div>
+      </div>
+      <p class="mute" id="aOut" style="margin:8px 0"></p>
+      <button class="primary" id="aAdd">Add to bid</button>
+    </div>
   </div>
 
   <div class="card">
@@ -109,6 +120,7 @@
     <div><span>Direct cost</span><span id="sDirect"></span></div>
     <div><span>Contingency</span><span id="sCont"></span></div>
     <div><span>Markup</span><span id="sMark"></span></div>
+    <div id="exRow"><span>Total ex GST</span><span id="sEx"></span></div>
     <div id="gstRow"><span id="gstLabel">GST</span><span id="sGst"></span></div>
     <div class="total"><span id="totalLabel">Bid total</span><span id="sTotal"></span></div>
     <div class="profit"><span>Profit</span><span id="sProfit"></span></div>
@@ -195,8 +207,8 @@ function calc(){
   $("sMat").textContent=fmt(mat);$("sLab").textContent=fmt(lab);$("sDirect").textContent=fmt(direct);
   $("sCont").textContent=fmt(cont)+` (${num($("cont").value)}%)`;
   $("sMark").textContent=fmt(mark)+` (${num($("markup").value)}%)`;
-  $("gstRow").style.display=g?"flex":"none";$("gstLabel").textContent=`GST ${g}%`;$("sGst").textContent=fmt(gst);
-  $("totalLabel").textContent=g?"Bid total (GST incl.)":"Bid total";
+  $("gstRow").style.display=g?"flex":"none";$("exRow").style.display=g?"flex":"none";$("sEx").textContent=fmt(sub);$("gstLabel").textContent=`GST ${g}%`;$("sGst").textContent=fmt(gst);
+  $("totalLabel").textContent=g?"Final total inc. GST":"Bid total";
   $("sTotal").textContent=fmt(total);$("sProfit").textContent=fmt(profit);
   $("sMargin").textContent=margin.toFixed(1)+"%";
   $("mBar").style.width=Math.max(0,Math.min(100,margin*2.5))+"%";
@@ -207,6 +219,8 @@ function calc(){
   $("marginWarn").innerHTML=below?`<strong>BELOW YOUR ${floor}% FLOOR. Do not send.</strong> Raise markup to at least ${need.toFixed(1)}% to hit the floor.`:(sub>0?`<span style="color:var(--ok)">Above your ${floor}% floor.</span>`:"");
   $("summary").style.outline=below?"3px solid var(--warn)":"none";
   $("cont").disabled=$("lockCont").value==="1";
+  const aL=num($("aLen").value),aW=num($("aWid").value),aP=num($("aPrice").value),aA=aL*aW;
+  $("aOut").textContent=`${aL} ft x ${aW} ft = ${aA.toLocaleString()} sq ft x ${fmt(aP)}/sq ft = ${fmt(aA*aP)}`;
   window.__bid={materials:mat,labor:lab,direct,contingency:cont,markup:mark,gst,total,profit,marginPct:margin,floorPct:floor,belowFloor:below};
 }
 
@@ -221,7 +235,7 @@ function load(p){
 document.addEventListener("input",e=>{
   const t=e.target;if(t.dataset.t){const arr=t.dataset.t==="m"?mats:labs;const f=+t.dataset.f;
     arr[+t.dataset.i][f]=(t.type==="number")?t.value:t.value;calc();}
-  else if(["markup","cont","cur","gst","floor"].includes(t.id))calc();
+  else if(["markup","cont","cur","gst","floor","aLen","aWid","aPrice"].includes(t.id))calc();
 });
 document.addEventListener("change",e=>{if(["cur","gst","lockCont"].includes(e.target.id))calc()});
 document.addEventListener("click",e=>{
@@ -231,6 +245,7 @@ document.addEventListener("click",e=>{
   if(t.dataset.addrule!==undefined){const r=RULES[+t.dataset.addrule];if(r.add)mats.push(r.add.slice());if(r.addLab)labs.push(r.addLab.slice());render();t.closest(".flag").remove();}
 });
 $("addMat").onclick=()=>{mats.push(["",1,"ea",0]);render()};
+$("aAdd").onclick=()=>{const L=num($("aLen").value),W=num($("aWid").value);mats.push([`${$("aName").value} (${L}x${W} ft)`,L*W,"sq ft",num($("aPrice").value)]);render();};
 $("addLab").onclick=()=>{labs.push(["",0,0]);render()};
 
 function ruleCheck(){
