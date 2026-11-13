@@ -10,11 +10,11 @@ const ok = (c, m) => { if (c) passes++; else { failures++; console.error("FAIL: 
 const eq = (a, b, m) => ok(a === b, `${m}: expected ${JSON.stringify(b)}, got ${JSON.stringify(a)}`);
 const tick = (ms = 0) => new Promise(r => setTimeout(r, ms));
 
-function boot({ fetch, seed } = {}) {
+function boot({ fetch, seed, escSeed } = {}) {
   const vc = new VirtualConsole();
   vc.on("jsdomError", e => { if (!/Not implemented/.test(e.message)) ok(false, "page script error: " + e.message); });
   const dom = new JSDOM(SRC, { runScripts: "dangerously", url: "http://localhost/churnradar/", pretendToBeVisual: true, virtualConsole: vc,
-    beforeParse(w) { if (fetch) w.fetch = fetch; if (seed !== undefined) w.localStorage.setItem("churnradar.accounts.v1", seed); } });
+    beforeParse(w) { if (fetch) w.fetch = fetch; if (seed !== undefined) w.localStorage.setItem("churnradar.accounts.v1", seed); if (escSeed !== undefined) w.localStorage.setItem("churnradar.escalations.v1", escSeed); } });
   const w = dom.window, d = w.document, $ = id => d.getElementById(id);
   const set = (el, v) => { const n = typeof el === "string" ? $(el) : el; n.value = v; n.dispatchEvent(new w.Event("input", { bubbles: true })); n.dispatchEvent(new w.Event("change", { bubbles: true })); };
   const txt = id => $(id).textContent.trim();
@@ -163,6 +163,89 @@ function boot({ fetch, seed } = {}) {
     ok(/AI unavailable/.test(cell) && /keyword read: churn risk/.test(cell), `${label}: fallback keyword read (got ${cell})`);
     eq(u.health("Northwind Dental Group"), "Red", `${label}: score unchanged`);
     eq(u.txt("cRed"), "3", `${label}: page still works`);
+  }
+
+  // ---------- Brasswire: owner, cancellation warning, pinning, check all ----------
+  {
+    const t = boot({ seed: "[]", fetch: async () => { throw new Error("down"); } });
+    t.$("sampleBtn").click();
+    eq(t.row("Northwind Dental Group").querySelector('[data-k="owner"]').value, "Priya Shah", "samples include owners");
+    t.$("checkAllBtn").click();
+    await tick(20);
+    ok(/Checked \d+ tickets: 2 cancellation warnings/.test(t.txt("listMsg")), `check all summary (got ${t.txt("listMsg")})`);
+    const items = [...t.d.querySelectorAll("#atRisk [data-risk]")];
+    const names = items.map(e => e.querySelector("strong").textContent.replace(/^\d+\.\s*/, ""));
+    eq(names[0], "Northwind Dental Group", "flagged worst account pinned first");
+    eq(names[1], "Fjordline Media", "flagged Green account pinned above unflagged Red accounts");
+    eq(names[2], "Meridian Freight", "then the normal worst-first order");
+    ok(items[0].textContent.includes("Cancellation warning → escalate to Priya Shah"), "badge names the owner");
+    ok(items[0].textContent.includes("(keyword read)"), "fallback clearly labelled keyword read");
+    ok(items[1].textContent.includes("escalate to Marcus Lee"), "second badge owner");
+    eq(t.health("Fjordline Media"), "Green", "R/A/G rule unchanged by cancellation warning");
+    eq(t.txt("cGreen"), "3", "counts unchanged"); eq(t.txt("rRisk"), "$16,900", "revenue at risk unchanged");
+    ok(!/Cancellation warning/.test(t.row("Bluegate Logistics").textContent), "no warning on neutral notes");
+    eq(t.txt("escOpen"), "2", "cancellation warnings open escalations automatically");
+    // editing the notes clears the warning
+    t.set(t.row("Fjordline Media").querySelector('[data-k="notes"]'), "All good.");
+    ok(!t.txt("atRisk").includes("Fjordline Media"), "cleared warning unpins a Green account");
+    // CSV owner column
+    t.set("csvIn", "Initrode,30,0,200,500,Sam Wu,We will not renew next year"); t.$("importBtn").click();
+    eq(t.row("Initrode").querySelector('[data-k="owner"]').value, "Sam Wu", "CSV owner column");
+    t.row("Initrode").querySelector("[data-ai]").click(); await tick(10);
+    ok(t.txt("atRisk").startsWith("1. Initrode") || t.txt("atRisk").includes("escalate to Sam Wu"), "CSV account flagged and escalated to its owner");
+  }
+  {
+    // AI path: data.cancellation === true, or churn risk with a cancel/leave/not-renew reason
+    const f = async (u, o) => { const text = JSON.parse(o.body).text;
+      const data = /refund/.test(text) ? { signal: "churn risk", cancellation: true, reason: "wants money back" }
+        : /FieldPulse/.test(text) ? { signal: "churn risk", reason: "may not renew, trialling a rival" }
+        : /evaluating/.test(text) ? { signal: "neutral", cancellation: false, reason: "procurement process" }
+        : { signal: "neutral", reason: "routine" };
+      return { ok: true, json: async () => ({ ok: true, data }) }; };
+    const t = boot({ seed: "[]", fetch: f });
+    t.$("sampleBtn").click(); t.$("checkAllBtn").click(); await tick(20);
+    const pinned = [...t.d.querySelectorAll("#atRisk .warn")].length;
+    eq(pinned, 2, "AI flags via cancellation:true and via churn-risk reason");
+    ok(t.row("Meridian Freight").textContent.includes("(AI)"), "AI-sourced warning labelled AI");
+    ok(!/Cancellation warning/.test(t.row("Fjordline Media").textContent), "AI cancellation:false wins over keywords when AI works");
+  }
+  // ---------- Escalations with a fake clock ----------
+  {
+    const t = boot({ seed: "[]", escSeed: "[]", fetch: async () => { throw new Error("down"); } });
+    let T = 1_700_000_000_000; t.w.__now = () => T;
+    t.$("sampleBtn").click();
+    t.row("Northwind Dental Group").querySelector("[data-ai]").click(); await tick(10);
+    eq(t.txt("escOpen"), "1", "escalation opened by warning");
+    const e = t.d.querySelector("#escOpenList [data-esc]");
+    ok(e.textContent.includes("Northwind Dental Group") && e.textContent.includes("Priya Shah") && e.textContent.includes("renews in 21 days") && e.textContent.includes("$4,800/mo") && e.textContent.includes("trialling FieldPulse"), "escalation shows account, owner, renewal, bill, quote");
+    T += 5 * 60000 + 7000; t.w.renderEscs();
+    ok(t.d.querySelector("#escOpenList [data-elapsed]").textContent.includes("5m 7s"), "live elapsed time");
+    ok(!t.d.querySelector("#escOpenList .esc.late"), "not red before threshold");
+    T += 26 * 60000; t.w.renderEscs();
+    ok(!!t.d.querySelector("#escOpenList .esc.late"), "red after 30 minutes");
+    t.set("escThreshold", "60");
+    ok(!t.d.querySelector("#escOpenList .esc.late"), "threshold editable");
+    t.set("escThreshold", "30");
+    t.d.querySelector("[data-copy]").click();
+    eq(t.txt("escCopyOut"), 'Cancellation warning: Northwind Dental Group (owner Priya Shah), renews in 21 days, $4,800/mo. Customer said: "Honestly we\'ve started trialling FieldPulse and may not renew in March." Please acknowledge in ChurnRadar.', "copy message text");
+    // manual escalation on an Amber account, then duplicate guard
+    const btn = () => [...t.d.querySelectorAll("#atRisk [data-escalate]")].find(b => b.closest("[data-risk]").textContent.includes("Kestrel"));
+    btn().click(); eq(t.txt("escOpen"), "2", "Escalate button opens one by hand");
+    btn().click(); ok(/already has an open escalation/.test(t.txt("listMsg")), "no duplicate open escalation");
+    // acknowledge: Northwind after 31m 7s total, Kestrel 4m 53s after it was opened at T
+    t.d.querySelector('#escOpenList [data-esc]:last-child [data-ack]').click();
+    const tA = 31 * 60000 + 7000;
+    ok(t.txt("escDoneList").includes("time to acknowledge: 31m 7s"), `ack stamps time (got ${t.txt("escDoneList")})`);
+    eq(t.txt("escOpen"), "1", "acknowledged leaves open list");
+    T += 4 * 60000 + 53000; t.d.querySelector("#escOpenList [data-ack]").click();
+    ok(t.txt("escDoneList").includes("time to acknowledge: 4m 53s"), "second ack time");
+    eq(t.txt("escAvg"), "18m 0s", "average warning-to-acknowledgment time");
+    eq(t.txt("escOpen"), "0", "no open escalations");
+    // persisted
+    const t2 = boot({ seed: t.w.localStorage.getItem("churnradar.accounts.v1"), escSeed: t.w.localStorage.getItem("churnradar.escalations.v1") });
+    eq(t2.txt("escAvg"), "18m 0s", "escalations remembered in this browser");
+    const t3 = boot({ escSeed: "nonsense" });
+    eq(t3.txt("escOpen"), "0", "corrupt escalation storage does not break page");
   }
 
   console.log(`${failures ? "FAILED" : "PASSED"}: ${passes} passed, ${failures} failed (churn)`);

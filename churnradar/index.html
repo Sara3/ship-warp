@@ -53,6 +53,14 @@
   .ai .sig{font-weight:700}
   .row4{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:10px}
   @media(max-width:600px){.row4{grid-template-columns:1fr 1fr}}
+  .warn{display:inline-block;background:var(--red);color:#fff;border-radius:12px;padding:2px 10px;font-size:12px;font-weight:700;margin:3px 0}
+  .esc{border:1px solid var(--line);border-left:5px solid var(--amb);border-radius:8px;padding:10px;margin:8px 0;font-size:14px}
+  .esc.late{border-left-color:var(--red);background:var(--redbg)}
+  .esc.done{border-left-color:var(--grn);background:var(--grnbg)}
+  .esc .t{float:right;font-weight:700}
+  .esc.late .t{color:var(--red)}
+  .esc q{display:block;margin:4px 0;color:var(--mute);font-style:italic}
+  pre.copy{white-space:pre-wrap;font-size:12px;background:#faf9f6;border:1px solid var(--line);border-radius:6px;padding:8px}
   footer{text-align:center;padding:20px;color:var(--mute);font-size:13px}
 </style>
 </head>
@@ -66,6 +74,7 @@
   <div class="money" id="revCard" aria-live="polite">
     <div><div class="lbl">Monthly revenue at risk</div><div class="big" id="rRisk">$0</div><div class="mute">Sum of the monthly bill across Red accounts</div></div>
     <div class="sub"><div>Amber: <strong id="rAmber">$0</strong> / month</div><div>Total monthly revenue: <strong id="rTotal">$0</strong></div></div>
+    <div class="sub" style="border-left:1px solid var(--line);padding-left:20px"><div>Open escalations: <strong id="escOpen">0</strong></div><div>Average warning-to-acknowledgment time: <strong id="escAvg">none yet</strong></div></div>
   </div>
   <div class="tiles" id="summary" aria-live="polite">
     <div class="tile Red"><span>Red</span><b id="cRed">0</b></div>
@@ -92,16 +101,29 @@
     </div>
   </div>
 
+  <div class="card" id="escCard">
+    <h2>Escalations</h2>
+    <div class="actions" style="margin-top:0">
+      <label for="escThreshold" style="margin:0">Turn red after (minutes)</label><input id="escThreshold" type="number" min="1" step="1" value="30" style="width:80px">
+      <span class="mute">A cancellation warning opens one automatically. Use "Escalate" on any at-risk account to open one by hand.</span>
+    </div>
+    <div id="escOpenList"></div>
+    <pre class="copy" id="escCopyOut" style="display:none"></pre>
+    <h3 style="font-size:13px;margin:12px 0 4px">Acknowledged</h3>
+    <div id="escDoneList"><p class="mute">None yet.</p></div>
+  </div>
+
   <div class="card">
     <h2>Accounts</h2>
     <div class="actions" style="margin-top:0">
       <button class="primary" id="sampleBtn">Load sample accounts</button>
+      <button id="checkAllBtn">Check all tickets for cancellation intent</button>
       <button id="clearBtn">Clear all</button>
       <span class="mute" id="listMsg" role="status"></span>
     </div>
     <div style="margin-top:12px">
       <table id="accTable">
-        <thead><tr><th>Account</th><th class="num">Logins (30 days)</th><th class="num">Open tickets</th><th class="num">Days to renewal</th><th class="num">Monthly bill ($)</th><th>Health</th><th>Points</th><th>Notes / latest ticket</th><th>AI signal</th><th></th></tr></thead>
+        <thead><tr><th>Account</th><th class="num">Logins (30 days)</th><th class="num">Open tickets</th><th class="num">Days to renewal</th><th class="num">Monthly bill ($)</th><th>Owner</th><th>Health</th><th>Points</th><th>Notes / latest ticket</th><th>AI signal</th><th></th></tr></thead>
         <tbody></tbody>
       </table>
       <p class="mute" id="emptyMsg">No accounts yet. Add one below, paste a CSV, or load the sample accounts.</p>
@@ -117,14 +139,15 @@
         <div><label for="aTickets">Open tickets</label><input id="aTickets" type="number" min="0" step="1" placeholder="0"></div>
         <div><label for="aDays">Days to renewal</label><input id="aDays" type="number" step="1" placeholder="90"></div>
       </div>
-      <div style="margin-top:10px;max-width:200px"><label for="aBill">Monthly bill ($)</label><input id="aBill" type="number" min="0" step="any" placeholder="0"></div>
+      <div class="row4" style="margin-top:10px;grid-template-columns:1fr 1fr"><div><label for="aBill">Monthly bill ($)</label><input id="aBill" type="number" min="0" step="any" placeholder="0"></div>
+        <div><label for="aOwner">Owner (CS)</label><input id="aOwner" placeholder="e.g. Priya Shah"></div></div>
       <div style="margin-top:10px"><label for="aNotes">Notes / latest ticket (optional)</label><input id="aNotes" placeholder="e.g. Asked how to export their data"></div>
       <div class="actions"><button class="primary" id="addBtn">Add account</button><span class="mute" id="addMsg" role="status"></span></div>
     </div>
     <div class="card">
       <h2>Paste CSV</h2>
-      <label for="csvIn">One account per line: name, logins, tickets, days, monthly bill (bill optional; header row optional; notes as an optional 6th column)</label>
-      <textarea id="csvIn" placeholder="name,logins,tickets,days,bill&#10;Acme Corp,3,6,21,4500&#10;Globex,20,0,180,1200"></textarea>
+      <label for="csvIn">One account per line: name, logins, tickets, days, monthly bill, owner, notes (bill, owner and notes optional; header row optional)</label>
+      <textarea id="csvIn" placeholder="name,logins,tickets,days,bill,owner&#10;Acme Corp,3,6,21,4500,Priya Shah&#10;Globex,20,0,180,1200,Marcus Lee"></textarea>
       <div class="actions"><button class="primary" id="importBtn">Import CSV</button><span class="mute" id="csvMsg" role="status"></span></div>
     </div>
   </div>
@@ -158,32 +181,33 @@ function reason(s){const out=[];
   if(s.t)out.push(`${s.T} open ticket${s.T===1?"":"s"}`);
   if(s.r)out.push(s.D<0?`renewal ${-s.D} day${s.D===-1?"":"s"} overdue`:s.D===0?"renews today":`renews in ${s.D} day${s.D===1?"":"s"}`);
   return out.join(", ");}
-function atRiskList(){return accounts.map(a=>({a,s:score(a)})).filter(x=>x.s.health!=="Green")
-  .sort((x,y)=>y.s.total-x.s.total||x.s.D-y.s.D||String(x.a.name).localeCompare(String(y.a.name)));}
+function atRiskList(){return accounts.map(a=>({a,s:score(a)})).filter(x=>x.s.health!=="Green"||x.a.cancel)
+  .sort((x,y)=>(y.a.cancel?1:0)-(x.a.cancel?1:0)||y.s.total-x.s.total||x.s.D-y.s.D||String(x.a.name).localeCompare(String(y.a.name)));}
 
 // ---- Storage (this browser only) ----
 function save(){try{window.localStorage.setItem(SKEY,JSON.stringify(accounts))}catch(e){}}
 function loadStored(){try{const v=JSON.parse(window.localStorage.getItem(SKEY));return Array.isArray(v)?v.filter(a=>a&&typeof a==="object").map(clean):null}catch(e){return null}}
-function clean(a){return {id:a.id||newId(),name:String(a.name??""),logins:cnt(a.logins),tickets:cnt(a.tickets),days:Math.floor(num(a.days)),bill:bill(a.bill),notes:String(a.notes??""),ai:a.ai&&typeof a.ai==="object"?{text:String(a.ai.text??""),sig:String(a.ai.sig??""),html:""}:null}}
+function clean(a){return {id:a.id||newId(),name:String(a.name??""),logins:cnt(a.logins),tickets:cnt(a.tickets),days:Math.floor(num(a.days)),bill:bill(a.bill),owner:String(a.owner??""),notes:String(a.notes??""),cancel:a.cancel?{src:String(a.cancel.src||""),why:String(a.cancel.why||"")}:null,ai:a.ai&&typeof a.ai==="object"?{text:String(a.ai.text??""),sig:String(a.ai.sig??""),html:""}:null}}
 
 const SAMPLE=[
-  ["Northwind Dental Group",3,6,21,4800,"Asked how to cancel; says they are switching to a competitor next quarter."],
-  ["Bluegate Logistics",8,3,45,2150,"Two billing questions this month."],
-  ["Harbor & Pine Realty",22,0,200,1200,"Loves the new dashboard, asking about adding 5 more seats."],
-  ["Copperleaf Clinics",2,1,60,3400,"Admin went on leave, nobody else trained."],
-  ["Meridian Freight",12,5,14,6900,"Outage complaints, wants a refund for last week."],
-  ["Tallow Street Bakery",40,1,120,180,""],
-  ["Kestrel Analytics",18,2,25,2750,"Our champion left the company."],
-  ["Orchard Lane Schools",4,3,75,5200,"Budget review in progress, price increase concerns."],
-  ["Sable Peak Outfitters",31,0,30,950,"Happy with support, renewal paperwork sent."],
-  ["Fjordline Media",16,1,95,1600,""]
+  ["Northwind Dental Group",3,6,21,4800,"Priya Shah","Honestly we've started trialling FieldPulse and may not renew in March."],
+  ["Bluegate Logistics",8,3,45,2150,"Marcus Lee","Two billing questions this month."],
+  ["Harbor & Pine Realty",22,0,200,1200,"Dana Ortiz","Loves the new dashboard, asking about adding 5 more seats."],
+  ["Copperleaf Clinics",2,1,60,3400,"Tom Becker","Admin went on leave, nobody else trained."],
+  ["Meridian Freight",12,5,14,6900,"Priya Shah","Outage complaints, wants a refund for last week."],
+  ["Tallow Street Bakery",40,1,120,180,"Dana Ortiz",""],
+  ["Kestrel Analytics",18,2,25,2750,"Marcus Lee","Our champion left the company."],
+  ["Orchard Lane Schools",4,3,75,5200,"Tom Becker","Budget review in progress, price increase concerns."],
+  ["Sable Peak Outfitters",31,0,30,950,"Dana Ortiz","Happy with support, renewal paperwork sent."],
+  ["Fjordline Media",16,1,95,1600,"Marcus Lee","Usage is fine, but procurement says we are evaluating alternatives before the renewal."]
 ];
-function sampleAccounts(){return SAMPLE.map(([name,logins,tickets,days,bill,notes])=>({id:newId(),name,logins,tickets,days,bill,notes,ai:null}))}
+function sampleAccounts(){return SAMPLE.map(([name,logins,tickets,days,bill,owner,notes])=>({id:newId(),name,logins,tickets,days,bill,owner,notes,ai:null,cancel:null}))}
 
 // ---- Rendering ----
+function warnBadge(a){return `<span class="warn">Cancellation warning → escalate to ${esc(a.owner||"(no owner set)")}</span> <span class="mute" style="font-size:11px">(${esc(a.cancel.src)})</span>`}
 function aiCell(a){const busy=a.busy?`<span class="mute">Reading...</span>`:"";
   const res=a.ai?`<div class="ai">${a.ai.html||esc(a.ai.text)}</div>`:"";
-  return `${res}${busy}<button class="sm" data-ai="${esc(a.id)}" ${a.busy?"disabled":""}>AI read</button>`;}
+  return `${a.cancel?warnBadge(a)+"<br>":""}${res}${busy}<button class="sm" data-ai="${esc(a.id)}" ${a.busy?"disabled":""}>AI read</button>`;}
 function rowScore(a){const s=score(a);return {pill:`<span class="pill ${s.health}">${s.health}</span>`,bd:esc(s.breakdown)}}
 function render(){
   const tb=$("accTable").querySelector("tbody");
@@ -193,6 +217,7 @@ function render(){
     <td class="num"><input aria-label="Open tickets" type="number" min="0" step="1" value="${esc(a.tickets)}" data-id="${esc(a.id)}" data-k="tickets"></td>
     <td class="num"><input aria-label="Days to renewal" type="number" step="1" value="${esc(a.days)}" data-id="${esc(a.id)}" data-k="days"></td>
     <td class="num"><input aria-label="Monthly bill" type="number" min="0" step="any" value="${esc(a.bill)}" data-id="${esc(a.id)}" data-k="bill" style="width:100px"></td>
+    <td><input aria-label="Account owner" value="${esc(a.owner)}" placeholder="CS owner" data-id="${esc(a.id)}" data-k="owner" style="min-width:110px"></td>
     <td data-cell="health">${r.pill}</td>
     <td class="bd" data-cell="bd">${r.bd}</td>
     <td><input aria-label="Notes or latest ticket" value="${esc(a.notes)}" placeholder="optional" data-id="${esc(a.id)}" data-k="notes" style="min-width:180px"></td>
@@ -207,7 +232,7 @@ function refresh(){
   $("rRisk").textContent=usd(rev.Red);$("rAmber").textContent=usd(rev.Amber);$("rTotal").textContent=usd(totalRev);
   $("cRed").textContent=c.Red;$("cAmber").textContent=c.Amber;$("cGreen").textContent=c.Green;$("cTotal").textContent=accounts.length;
   const list=atRiskList();
-  $("atRisk").innerHTML=list.length?list.map(({a,s},i)=>`<div class="risk ${s.health}" data-risk="${esc(a.id)}"><strong>${i+1}. ${esc(a.name||"(no name)")}</strong> <span class="pill ${s.health}">${s.health} &middot; ${s.total} pts</span> <strong style="float:right">${esc(usd(bill(a.bill)))} / month</strong><br>${esc(reason(s))}</div>`).join("")
+  $("atRisk").innerHTML=list.length?list.map(({a,s},i)=>`<div class="risk ${s.health}" data-risk="${esc(a.id)}"><strong>${i+1}. ${esc(a.name||"(no name)")}</strong> <span class="pill ${s.health}">${s.health} &middot; ${s.total} pts</span> <strong style="float:right">${esc(usd(bill(a.bill)))} / month</strong><br>${a.cancel?warnBadge(a)+"<br>":""}${esc(reason(s)||"score is Green, pinned for the cancellation warning")}${a.owner?` <span class="mute">&middot; owner ${esc(a.owner)}</span>`:""} <button class="sm" data-escalate="${esc(a.id)}">Escalate</button></div>`).join("")
     :`<p class="mute">${accounts.length?"No Red or Amber accounts. Everyone looks healthy.":"No accounts yet."}</p>`;
   window.__churn={counts:c,revenue:{red:rev.Red,amber:rev.Amber,total:totalRev},total:accounts.length,atRisk:list.map(x=>x.a.name)};
   save();
@@ -218,7 +243,7 @@ function find(id){return accounts.find(a=>a.id===id)}
 
 // ---- Edit / delete ----
 document.addEventListener("input",e=>{const t=e.target,a=t.dataset.id&&find(t.dataset.id);if(!a)return;const k=t.dataset.k;
-  if(k==="name"||k==="notes"){a[k]=t.value;if(k==="notes")a.ai=null}else a[k]=k==="days"?Math.floor(num(t.value)):k==="bill"?bill(t.value):cnt(t.value);
+  if(k==="name"||k==="notes"||k==="owner"){a[k]=t.value;if(k==="notes"){a.ai=null;a.cancel=null}}else a[k]=k==="days"?Math.floor(num(t.value)):k==="bill"?bill(t.value):cnt(t.value);
   updateRow(a);refresh();});
 function msg(id,h){$(id).innerHTML=h}
 document.addEventListener("click",e=>{const t=e.target;
@@ -232,9 +257,9 @@ $("sampleBtn").onclick=()=>{undoList=accounts.length?accounts.slice():null;accou
 $("clearBtn").onclick=()=>{if(!accounts.length){msg("listMsg","Nothing to clear.");return}undoList=accounts.slice();accounts=[];render();
   msg("listMsg",`Cleared all accounts. <button class="sm" id="undoBtn">Undo</button>`);};
 $("addBtn").onclick=()=>{const name=$("aName").value.trim();if(!name){msg("addMsg","Give the account a name first.");$("aName").focus();return}
-  const a={id:newId(),name,logins:cnt($("aLogins").value),tickets:cnt($("aTickets").value),days:Math.floor(num($("aDays").value===""?90:$("aDays").value)),bill:bill($("aBill").value),notes:$("aNotes").value.trim(),ai:null};
+  const a={id:newId(),name,logins:cnt($("aLogins").value),tickets:cnt($("aTickets").value),days:Math.floor(num($("aDays").value===""?90:$("aDays").value)),bill:bill($("aBill").value),owner:$("aOwner").value.trim(),cancel:null,notes:$("aNotes").value.trim(),ai:null};
   accounts.push(a);render();const s=score(a);msg("addMsg",`Added "${esc(name)}": ${esc(s.breakdown)}`);
-  ["aName","aLogins","aTickets","aDays","aBill","aNotes"].forEach(id=>$(id).value="");};
+  ["aName","aLogins","aTickets","aDays","aBill","aOwner","aNotes"].forEach(id=>$(id).value="");};
 
 // ---- CSV import: name,logins,tickets,days[,notes] ----
 function parseLine(line){const out=[];let cur="",q=false;
@@ -249,16 +274,17 @@ function importCSV(text){const lines=String(text).split(/\r?\n/).map(l=>l.trim()
     if(f.length<4||!f[0]){skipped.push(`line ${i+1} (needs name, logins, tickets, days)`);return}
     const bad=[["logins",f[1]],["tickets",f[2]],["days",f[3]]].filter(([,v])=>!isNum(v)).map(([k])=>k);
     if(bad.length){skipped.push(`line ${i+1} (${bad.join(", ")} not a number)`);return}
-    const hasBill=f.length>4&&isNum(f[4].replace(/[$,]/g,""));
-    if(f.length>4&&f[4]!==""&&!hasBill&&/^[-$\d.,\s]+$/.test(f[4])){skipped.push(`line ${i+1} (bill not a number)`);return}
-    added.push({id:newId(),name:f[0],logins:cnt(f[1]),tickets:cnt(f[2]),days:Math.floor(Number(f[3])),bill:hasBill?bill(f[4].replace(/[$,]/g,"")):0,notes:f.slice(hasBill||f[4]===""?5:4).join(", "),ai:null});});
+    const b=(f[4]||"").replace(/[$,\s]/g,"");
+    if(b!==""&&!isNum(b)){skipped.push(`line ${i+1} (bill not a number)`);return}
+    added.push({id:newId(),name:f[0],logins:cnt(f[1]),tickets:cnt(f[2]),days:Math.floor(Number(f[3])),bill:b===""?0:bill(b),owner:f[5]||"",notes:f.slice(6).join(", "),ai:null,cancel:null});});
   return {added,skipped};}
 $("importBtn").onclick=()=>{const {added,skipped}=importCSV($("csvIn").value);
   if(added.length){accounts=accounts.concat(added);render();$("csvIn").value=""}
   msg("csvMsg",(added.length?`Imported ${added.length} account${added.length===1?"":"s"}.`:"Nothing imported.")+(skipped.length?` Skipped ${esc(skipped.join("; "))}.`:""));};
 
 // ---- AI read (advice only; never changes the score) ----
-const KW_RISK=/cancel|switch(ing)? to|competitor|leav(e|ing)|left the company|refund|too expensive|price increase|downgrad|frustrat|angry|unhappy|disappoint|not using|churn|terminat|outage|broken|budget (cut|review)/i;
+const KW_CANCEL=/cancel(lation)?|not renew|won['’]?t renew|will not renew|terminat(e|ing|ion)|switching to|evaluating alternatives|moving to another vendor/i;
+const KW_RISK=/not renew|trial(l)?ing|switch(ing)? to|competitor|leav(e|ing)|left the company|refund|too expensive|price increase|downgrad|frustrat|angry|unhappy|disappoint|not using|churn|terminat|outage|broken|budget (cut|review)/i;
 const KW_POS=/love|great|happy|expand|upgrade|more seats|adding|thank|renew(al|ing)? (signed|paperwork|confirmed)|recommend/i;
 function keywordRead(text){const r=text.match(KW_RISK),p=text.match(KW_POS);
   if(r)return {sig:"churn risk",why:`mentions "${r[0]}"`};if(p)return {sig:"positive",why:`mentions "${p[0]}"`};return {sig:"neutral",why:"no risk or positive words found"};}
@@ -270,19 +296,60 @@ async function callAI(text){
     if(!res||!res.ok)throw new Error("HTTP "+(res&&res.status));
     const j=await Promise.race([res.json(),timeout]);
     const d=j&&j.ok&&j.data;if(!d||!["churn risk","neutral","positive"].includes(d.signal))throw new Error("bad reply");
-    return {sig:d.signal,why:String(d.reason||"").slice(0,300)};}
+    const why=String(d.reason||"").slice(0,300);
+    return {sig:d.signal,why,cancel:d.cancellation===true||(d.signal==="churn risk"&&/cancel|leav|not renew|won['’]?t renew/i.test(why))};}
   finally{clearTimeout(timer)}}
 async function aiRead(a){const text=String(a.notes||"").trim();
   if(!text){a.ai={sig:"",text:"Add notes or the latest ticket text first.",html:""};updateRow(a);return}
   a.busy=true;updateRow(a);
-  try{const r=await callAI(text);a.ai={sig:r.sig,text:`AI: ${r.sig}${r.why?" - "+r.why:""}`,html:`<span class="sig">AI: ${esc(r.sig)}</span>${r.why?" - "+esc(r.why):""}`};}
-  catch(e){const k=keywordRead(text);a.ai={sig:k.sig,text:`AI unavailable. keyword read: ${k.sig} (${k.why})`,html:`<span class="mute">AI unavailable.</span> <span class="sig">keyword read: ${esc(k.sig)}</span> (${esc(k.why)})`};}
-  finally{a.busy=false;if(find(a.id))updateRow(a);refresh();}}
+  let cancel=null;
+  try{const r=await callAI(text);if(r.cancel)cancel={src:"AI",why:r.why};a.ai={sig:r.sig,text:`AI: ${r.sig}${r.why?" - "+r.why:""}`,html:`<span class="sig">AI: ${esc(r.sig)}</span>${r.why?" - "+esc(r.why):""}`};}
+  catch(e){const k=keywordRead(text),m=text.match(KW_CANCEL);if(m)cancel={src:"keyword read",why:`mentions "${m[0]}"`};a.ai={sig:k.sig,text:`AI unavailable. keyword read: ${k.sig} (${k.why})`,html:`<span class="mute">AI unavailable.</span> <span class="sig">keyword read: ${esc(k.sig)}</span> (${esc(k.why)})`};}
+  finally{a.busy=false;a.cancel=cancel;if(cancel&&find(a.id))openEscalation(a,"cancellation");if(find(a.id))updateRow(a);refresh();}
+  return !!cancel;}
+$("checkAllBtn").onclick=async()=>{const list=accounts.filter(a=>String(a.notes||"").trim());
+  if(!list.length){msg("listMsg","No accounts have notes or ticket text to read.");return}
+  msg("listMsg",`Reading ${list.length} tickets...`);$("checkAllBtn").disabled=true;
+  try{const res=await Promise.all(list.map(a=>aiRead(a).catch(()=>false)));const k=res.filter(Boolean).length;
+    msg("listMsg",`Checked ${list.length} tickets: ${k} cancellation warning${k===1?"":"s"}.`);}finally{$("checkAllBtn").disabled=false}};
+
+// ---- Escalations (clock is swappable so tests can fake time) ----
+const EKEY="churnradar.escalations.v1",TKEY="churnradar.escThreshold.v1";
+function now(){return typeof window.__now==="function"?window.__now():Date.now()}
+let escs=[];
+function loadEscs(){try{const v=JSON.parse(window.localStorage.getItem(EKEY)||"[]");return Array.isArray(v)?v.filter(e=>e&&e.id&&isFinite(e.createdAt)):[]}catch(e){return []}}
+function saveEscs(){try{window.localStorage.setItem(EKEY,JSON.stringify(escs))}catch(e){}}
+function dur(ms){const t=Math.max(0,Math.floor(ms/1000)),h=Math.floor(t/3600),m=Math.floor(t%3600/60),sec=t%60;return h?`${h}h ${m}m`:`${m}m ${sec}s`}
+function renewText(d){return d<0?`renewal ${-d} days overdue`:d===0?"renews today":`renews in ${d} day${d===1?"":"s"}`}
+function escMessage(e){return `${e.kind==="cancellation"?"Cancellation warning":"At-risk escalation"}: ${e.account} (owner ${e.owner||"unassigned"}), ${renewText(e.days)}, ${usd(e.bill)}/mo. Customer said: "${e.quote||"(no ticket text)"}" Please acknowledge in ChurnRadar.`}
+function openEscalation(a,kind){if(escs.some(e=>e.accountId===a.id&&!e.ackAt))return false;
+  escs.unshift({id:"e"+now().toString(36)+(seq++).toString(36),accountId:a.id,account:a.name,owner:a.owner,createdAt:now(),quote:String(a.notes||"").trim(),days:Math.floor(num(a.days)),bill:bill(a.bill),kind,ackAt:null});
+  saveEscs();renderEscs();return true;}
+function threshold(){return Math.max(1,num($("escThreshold").value)||30)}
+function renderEscs(){const t=now(),lim=threshold()*60000,open=escs.filter(e=>!e.ackAt),done=escs.filter(e=>e.ackAt);
+  $("escOpenList").innerHTML=open.length?open.map(e=>{const el=t-e.createdAt,late=el>=lim;return `<div class="esc${late?" late":""}" data-esc="${esc(e.id)}">
+    <span class="t" data-elapsed>${late?"overdue ":""}${dur(el)}</span><strong>${esc(e.account)}</strong> &middot; owner ${esc(e.owner||"unassigned")} &middot; ${esc(renewText(e.days))} &middot; ${esc(usd(e.bill))}/mo
+    <q>${esc(e.quote||"(no ticket text)")}</q>
+    <button class="sm" data-copy="${esc(e.id)}">Copy message</button> <button class="sm primary" data-ack="${esc(e.id)}">Acknowledge</button></div>`}).join("")
+    :`<p class="mute">No open escalations.</p>`;
+  $("escDoneList").innerHTML=done.length?done.map(e=>`<div class="esc done" data-done="${esc(e.id)}"><span class="t">time to acknowledge: ${dur(e.ackAt-e.createdAt)}</span><strong>${esc(e.account)}</strong> &middot; owner ${esc(e.owner||"unassigned")}</div>`).join(""):`<p class="mute">None yet.</p>`;
+  $("escOpen").textContent=open.length;
+  $("escAvg").textContent=done.length?dur(done.reduce((s,e)=>s+(e.ackAt-e.createdAt),0)/done.length):"none yet";}
+document.addEventListener("click",e=>{const t=e.target;
+  if(t.dataset.escalate){const a=find(t.dataset.escalate);if(!a)return;msg("listMsg",openEscalation(a,a.cancel?"cancellation":"manual")?`Escalated "${esc(a.name)}" to ${esc(a.owner||"(no owner set)")}.`:`"${esc(a.name)}" already has an open escalation.`);}
+  if(t.dataset.copy){const x=escs.find(v=>v.id===t.dataset.copy);if(!x)return;const txt=escMessage(x);$("escCopyOut").textContent=txt;$("escCopyOut").style.display="block";
+    try{if(navigator.clipboard)navigator.clipboard.writeText(txt).catch(()=>{})}catch(err){}}
+  if(t.dataset.ack){const x=escs.find(v=>v.id===t.dataset.ack);if(!x||x.ackAt)return;x.ackAt=now();saveEscs();renderEscs();}
+});
+$("escThreshold").addEventListener("input",()=>{try{window.localStorage.setItem(TKEY,String(threshold()))}catch(e){}renderEscs()});
 
 // ---- Start: remembered accounts, or the samples on a first visit ----
 const stored=loadStored();
 accounts=stored===null?sampleAccounts():stored;
-render();
+escs=loadEscs();
+try{const th=window.localStorage.getItem(TKEY);if(th)$("escThreshold").value=th}catch(e){}
+render();renderEscs();
+setInterval(renderEscs,1000);
 </script>
 </body>
 </html>
